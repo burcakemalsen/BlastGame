@@ -17,7 +17,7 @@ Sabit mimari kuralları:
 - **Tek kaynak:** Kural kodu yalnız `Assets/Scripts/Core/` altında durur. Test projesi aynı dosyalara dışarıdan bakar; kopya yok.
 - **Rastgelelik dışarıdan:** Doldurma rengi seed'li bir kaynaktan gelir (seed: aynı sayı verilince hep aynı sırayı üreten başlangıç değeri). Böylece testler tekrarlanabilir olur.
 - **Dil sürümü:** Test projesi Unity'nin desteklediği C# sürümüne sabitlenir. Kesin sürüm Adım 0'da Unity'den doğrulanır (tahmin: C# 9, `netstandard2.1`; doğrulanmadı).
-- **Sahne kodla kurulur (öneri, ürün sahibinin onayı bekleniyor):** Sahnede tek bir başlatıcı script olur; grid'i ve nesneleri oyun başlayınca o oluşturur. Gerekçe: ajanlar Editor'ü fareyle kullanamaz, sahne dosyasını elle yazınca bozar; kodla kurulunca her şey okunabilir C# olur. Bedeli: grid Editor'de yalnız Play'e basınca görünür.
+- **Sahne kodla kurulur (karar, 2026-11-14):** Sahnede tek bir başlatıcı script olur; grid'i ve nesneleri oyun başlayınca o oluşturur. Gerekçe: ajanlar Editor'ü fareyle kullanamaz, sahne dosyasını elle yazınca bozar; kodla kurulunca her şey okunabilir C# olur. Bedeli: grid Editor'de yalnız Play'e basınca görünür.
 
 ## 3. Test yolu
 - `tests/Core/Core.csproj`: `Assets/Scripts/Core/**/*.cs` dosyalarını içine alan kütüphane, Unity uyumlu dil sürümüyle.
@@ -109,7 +109,6 @@ Adım 5 notu: Unity'nin `JsonUtility`'si `UnityEngine` içinde olduğu için kur
 | 9 | Cila ve sunum | Basit animasyon, güzel görsel, README'de ekran görüntüsü, kısa video, tarayıcıda oynama linki (GitHub Pages) ve GitHub Releases'te APK |
 
 ## 6. Açık kararlar (ürün sahibinin)
-- **Sahne kodla kurulsun mu** (bölüm 2).
 - **Ürün katmanı:** (a) kısa tasarım dokümanı (neden bu engel, level'lar neden bu zorlukta), (b) bir level'ı binlerce kez kendi kendine oynayıp kazanma oranını ölçen küçük program. Kabul edilirse Faz 2'ye adım olarak eklenir.
 - **Oyun adı, özel öğe ve engel tasarımı:** Adım 6 ve 7'den önce.
 - **Gemini modeli:** Adım 0'da listeye bakılıp kesinleşir (şimdilik Pro).
