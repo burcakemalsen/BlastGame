@@ -22,6 +22,7 @@ Oyun alanının kural katmanındaki modelini (grid) ve seed'li rastgele doldurma
 - Bir hücre ya boştur ya da bir renk taşır. Bu adımda başka içerik (engel, özel öğe) yok.
 - Grid dışındaki bir hücreyi okumak ya da yazmak `ArgumentOutOfRangeException`.
 - `IsInside(x, y)` hiçbir zaman hata vermez; içerideyse `true`.
+- `Set` yalnız `null` ya da tanımlı bir `TileColor` kabul eder; tanımsız değer (ör. `(TileColor)99`, `(TileColor)(-1)`) → `ArgumentOutOfRangeException` (ek, 2026-11-14).
 
 ### Renkler
 - Altı renk: `Red`, `Green`, `Blue`, `Yellow`, `Purple`, `Orange` (bu sırayla, değerleri `0..5`).
@@ -38,6 +39,7 @@ Oyun alanının kural katmanındaki modelini (grid) ve seed'li rastgele doldurma
 - **Doldurma sırası sabittir:** `y = 0`'dan `Height-1`'e, her satırda `x = 0`'dan `Width-1`'e. Böylece aynı kaynak aynı grid'i verir ve testler sahte bir kaynakla tam beklenen grid'i kontrol edebilir.
 - `colorCount` dışı (`< 1` ya da `> 6`) → `ArgumentOutOfRangeException`. `random` `null` → `ArgumentNullException`. Boyut kuralları Grid'deki gibi.
 - Sonuçta boş hücre kalmaz.
+- Kaynak `0 .. colorCount-1` dışında bir değer döndürürse (negatif ya da `≥ colorCount`) → `InvalidOperationException`; grid döndürülmez (ek, 2026-11-14).
 
 ## Örnekler
 - `new Grid(3, 2)` → `Width = 3`, `Height = 2`, `Get(0,0)` ... `Get(2,1)` hepsi `null`.
@@ -54,6 +56,8 @@ Oyun alanının kural katmanındaki modelini (grid) ve seed'li rastgele doldurma
 - `colorCount = 6` ve yeterince büyük grid'de yalnız `0..5` değerleri görülür.
 - `SeededRandom`: aynı seed → aynı ilk 100 değer; seed 1 ile 2'nin ilk 10 değeri aynı değil; `Next(1)` hep 0; `Next(0)` ve `Next(-1)` hata; 6000 çekilişte `Next(6)`'nın her değeri en az 800 kez gelir (kaba eşitlik).
 - `IsInside` sınır dışı koordinatlarda `false`, hata yok.
+- `Set` ile tanımsız `TileColor` (6, 99, -1) → `ArgumentOutOfRangeException`; tanımlı altı renk ve `null` kabul edilir.
+- Sahte kaynak bir hücrede `colorCount`, `colorCount + 5` ya da `-1` döndürürse `CreateRandom` → `InvalidOperationException` (ilk hücrede de, son hücrede de).
 
 ## Arayüz sözleşmesi (kural katmanı, `Assets/Scripts/Core/`, namespace `BlastGame.Core`)
 
