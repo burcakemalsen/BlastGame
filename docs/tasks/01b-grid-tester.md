@@ -1,6 +1,6 @@
 # Görev: Adım 1 eki, iki yeni davranışın testleri (testçi)
 
-Model: Opus 5.5. Proje klasörü: `C:\Dev\BlastGame`, dal `step/01-grid` (dal değiştirme).
+Model: Sonnet 5.5 medium. Proje klasörü: `C:\Dev\BlastGame`, dal `step/01-grid` (dal değiştirme).
 
 ## Önce oku
 1. `CLAUDE.md`, `docs/RULES.md` ("Herkes için", "Onay", "Testçi")

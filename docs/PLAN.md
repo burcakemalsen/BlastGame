@@ -36,7 +36,7 @@ Orchestrator yalnız beyindir: iş üretmez, yaptırır ve denetler.
 | Orchestrator | Opus 5.5 (ana oturum) | Spec ve görev tarifi yazar, ajanları başlatır, rapor ve diff okur, geri yollar, ürün sahibine anlatır, push öncesi taramayı ve push'u yapar |
 | Kurulumcu | Sonnet 5.5 medium | Adım 0'ı yapar |
 | Kodcu | Adıma göre Sonnet 5.5 medium ya da Opus 5.5 | Stub'ları ve uygulamayı yazar |
-| Testçi | Opus 5.5 | Spec ve stub imzalarından, kodu kırmaya çalışan testler yazar |
+| Testçi | Yeni adım: Opus 5.5 medium; küçük ek (1-3 net davranış): Sonnet 5.5 medium | Spec ve stub imzalarından, kodu kırmaya çalışan testler yazar |
 | Kontrolcü 1 | Sonnet 5.5 | Açık arar, bilerek bozma dener, rapor yazar |
 | Kontrolcü 2 | Gemini 4 Argon (`agy`) | Kodu spec'le karşılaştırır, kaçan uç durumu arar; farklı model ailesi. Kotası biterse bu kontrol atlanır ve rapora not düşülür |
 
