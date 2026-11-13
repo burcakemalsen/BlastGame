@@ -122,5 +122,5 @@ Otomatik test edilmez; kapısı elle kontrol listesi.
 3. Testçi (Opus 5.5): testler, kırmızı → `test(core): add grid tests`.
 4. Kodcu: uygulama + görüntü katmanı, testler yeşil → `feat(core): implement grid model`, `feat(view): render grid from code`.
 5. Kontrolcüler (Claude + Gemini) paralel; bulgular kapanır.
-6. Ürün sahibi Editor'de ve telefonda dener.
-7. Tarama, push, PR, CI yeşil, merge, WebGL yayını.
+6. WebGL önizlemesi `gh-pages`'e yayımlanır; ürün sahibi Editor'de ve telefonda dener.
+7. Tarama, push, PR, CI yeşil, merge.
