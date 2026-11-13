@@ -1,3 +1,5 @@
+using System;
+
 namespace BlastGame.Core
 {
     /// <summary>Game board model. (0, 0) is the bottom-left cell; y grows upward.</summary>
@@ -6,35 +8,48 @@ namespace BlastGame.Core
         public const int MinSize = 1;
         public const int MaxSize = 16;
 
+        private readonly TileColor?[,] _cells;
+
         public Grid(int width, int height)
         {
-            throw new System.NotImplementedException();
+            if (width < MinSize || width > MaxSize)
+                throw new ArgumentOutOfRangeException(nameof(width));
+            if (height < MinSize || height > MaxSize)
+                throw new ArgumentOutOfRangeException(nameof(height));
+
+            Width = width;
+            Height = height;
+            _cells = new TileColor?[width, height];
         }
 
-        public int Width
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public int Width { get; }
 
-        public int Height
-        {
-            get { throw new System.NotImplementedException(); }
-        }
+        public int Height { get; }
 
         public bool IsInside(int x, int y)
         {
-            throw new System.NotImplementedException();
+            return x >= 0 && x < Width && y >= 0 && y < Height;
         }
 
         /// <summary>Returns the cell color; null means the cell is empty.</summary>
         public TileColor? Get(int x, int y)
         {
-            throw new System.NotImplementedException();
+            ThrowIfOutside(x, y);
+            return _cells[x, y];
         }
 
         public void Set(int x, int y, TileColor? color)
         {
-            throw new System.NotImplementedException();
+            ThrowIfOutside(x, y);
+            _cells[x, y] = color;
+        }
+
+        private void ThrowIfOutside(int x, int y)
+        {
+            if (x < 0 || x >= Width)
+                throw new ArgumentOutOfRangeException(nameof(x), "Cell (" + x + ", " + y + ") is outside the grid.");
+            if (y < 0 || y >= Height)
+                throw new ArgumentOutOfRangeException(nameof(y), "Cell (" + x + ", " + y + ") is outside the grid.");
         }
     }
 }
