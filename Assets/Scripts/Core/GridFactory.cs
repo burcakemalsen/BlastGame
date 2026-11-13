@@ -24,7 +24,11 @@ namespace BlastGame.Core
             {
                 for (int x = 0; x < width; x++)
                 {
-                    grid.Set(x, y, (TileColor)random.Next(colorCount));
+                    int value = random.Next(colorCount);
+                    if (value < 0 || value >= colorCount)
+                        throw new InvalidOperationException(
+                            "Random source returned " + value + ", expected 0.." + (colorCount - 1) + ".");
+                    grid.Set(x, y, (TileColor)value);
                 }
             }
             return grid;

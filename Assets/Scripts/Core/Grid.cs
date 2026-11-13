@@ -41,6 +41,8 @@ namespace BlastGame.Core
         public void Set(int x, int y, TileColor? color)
         {
             ThrowIfOutside(x, y);
+            if (color.HasValue && !Enum.IsDefined(typeof(TileColor), color.Value))
+                throw new ArgumentOutOfRangeException(nameof(color), "Undefined tile color: " + (int)color.Value + ".");
             _cells[x, y] = color;
         }
 

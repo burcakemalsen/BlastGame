@@ -53,3 +53,17 @@ exit=0
 
 ### Öneriler
 - Yok.
+
+## Ek (2026-11-14)
+
+Spec'e eklenen iki davranış uygulandı; yalnız `Assets/Scripts/Core/` değişti, `tests/`'e dokunulmadı.
+
+### Değişen dosyalar
+- `Assets/Scripts/Core/Grid.cs`: `Set`, tanımsız `TileColor` değerinde (`Enum.IsDefined`) `ArgumentOutOfRangeException` fırlatır; kontrol hücre yazılmadan önce yapıldığı için hata sonrası hücre değişmez. `null` ve tanımlı altı renk kabul edilir.
+- `Assets/Scripts/Core/GridFactory.cs`: `CreateRandom`, kaynaktan gelen değer `0 .. colorCount-1` dışındaysa `InvalidOperationException` fırlatır.
+
+### Kontroller
+- `dotnet test tests/BlastGame.Tests.slnx`: `Başarılı! - Başarısız: 0, Başarılı: 246, Atlanan: 0, Toplam: 246`
+
+### Doğrulanmayanlar
+- `scripts/unity-check.ps1` çalıştırılmadı (görev gereği; Unity kontrolünü orchestrator yapacak).
