@@ -31,3 +31,25 @@ exit=0
 ### Spec'te belirsiz bulunanlar
 - Belirsizlik yok; sözleşme imzaları birebir uygulandı.
 - Not: `tests/Core/Core.csproj` Core kaynaklarını `Assets/Scripts/Core/` altından otomatik topluyor, yeni dosyalar için csproj değişikliği gerekmedi.
+
+## Aşama B (uygulama)
+
+### Değişen dosyalar
+- `Assets/Scripts/Core/`: `Grid.cs`, `SeededRandom.cs` (SplitMix64, başlangıç `(ulong)(long)seed`), `GridFactory.cs` uygulandı. `AssemblyMarker.cs` ve `.meta` silindi.
+- `Assets/Scripts/View/`: yeni `GameBootstrap.cs`, `GridView.cs`, `TileColors.cs`, `CameraFitter.cs`; `.gitkeep` silindi. Sahne dosyasına dokunulmadı. `tests/`'e dokunulmadı.
+- Uygulama notları: `CreateRandom` bütün doğrulamayı kaynağı çağırmadan önce yapar; `Grid.Set` grid dışında hata verirse grid değişmez; hata, dışarıdaki eksene göre `nameof(x)` ya da `nameof(y)` ile atılır.
+- Orchestrator incelemesinden: `[RuntimeInitializeOnLoadMethod]` metodu `Start` yerine `CreateOnLoad` adlandırıldı.
+- View dosyalarında `using Grid = BlastGame.Core.Grid;` takma adı var: `UnityEngine.Grid` ile ad çakışması (CS0104) çıkmıştı.
+
+### Kontroller (son kod hâliyle)
+- `dotnet test tests/BlastGame.Tests.slnx`: `Başarılı! - Başarısız: 0, Başarılı: 223, Atlanan: 0, Toplam: 223`
+- `scripts/unity-check.ps1`: `Unity compile check: clean.` (exit 0)
+- `scripts/build-webgl.ps1`: `WebGL build: C:\Dev\BlastGame\Builds\WebGL  (16.57 MB total)` (exit 0)
+- `Logs/build-webgl.log` ve `Logs/unity-check.log` içinde `GameBootstrap`, `warning CS` ya da `error CS` satırı yok.
+
+### Doğrulanmayanlar
+- Editor'de Play yapılmadı; görüntü (renkler, kamera sığdırma, yeniden boyutlandırma) elle kontrol listesinde, ürün sahibi deneyecek.
+- WebGL çıktısı tarayıcıda açılmadı.
+
+### Öneriler
+- Yok.
