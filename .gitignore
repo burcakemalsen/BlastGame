@@ -1,0 +1,50 @@
+# Local settings
+.claude/settings.local.json
+
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Uu]serSettings/
+[Bb]uild/
+[Bb]uilds/
+[Mm]emoryCaptures/
+# Only at the repo root, so tests/**/*.csproj stay tracked
+/*.csproj
+/*.sln
+/*.slnx
+
+# Build outputs (APK is published via GitHub Releases)
+*.apk
+*.aab
+
+# Secrets
+.env
+.env.*
+*.keystore
+*.jks
+*.pem
+*.key
+*.p12
+*secret*
+*token*
+*credential*
+
+# Test outputs
+bin/
+obj/
+TestResults/
+
+# Editor settings
+.vs/
+.idea/
+.vscode/
+
+# Extra safety
+*.zip
+*.pdf
+*.docx
+
+# Android/CMake intermediate output
+/.utmp/
