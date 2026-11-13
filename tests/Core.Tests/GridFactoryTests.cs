@@ -6,6 +6,56 @@ namespace BlastGame.Core.Tests
 {
     public class GridFactoryTests
     {
+        [Theory]
+        [InlineData(3, 3)]
+        [InlineData(3, 4)]
+        [InlineData(3, int.MaxValue)]
+        [InlineData(3, -1)]
+        [InlineData(3, int.MinValue)]
+        [InlineData(1, 1)]
+        [InlineData(1, -1)]
+        [InlineData(6, 6)]
+        [InlineData(6, 7)]
+        [InlineData(6, -1)]
+        public void CreateRandom_SourceValueOutOfRange_ThrowsInvalidOperation(int colorCount, int badValue)
+        {
+            var source = new SequenceRandomSource(badValue);
+
+            Assert.Throws<InvalidOperationException>(() => GridFactory.CreateRandom(3, 2, colorCount, source));
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(-1)]
+        public void CreateRandom_BadValueOnlyOnFirstCell_ThrowsInvalidOperation(int badValue)
+        {
+            var source = new SequenceRandomSource(badValue, 0, 1, 2, 0, 1);
+
+            Assert.Throws<InvalidOperationException>(() => GridFactory.CreateRandom(3, 2, 3, source));
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(-1)]
+        public void CreateRandom_BadValueOnlyOnLastCell_ThrowsInvalidOperation(int badValue)
+        {
+            var source = new SequenceRandomSource(0, 1, 2, 0, 1, badValue);
+
+            Assert.Throws<InvalidOperationException>(() => GridFactory.CreateRandom(3, 2, 3, source));
+        }
+
+        [Fact]
+        public void CreateRandom_SourceValuesAtRangeEdges_AreAccepted()
+        {
+            var source = new SequenceRandomSource(0, 2, 0, 2, 0, 2);
+
+            Grid grid = GridFactory.CreateRandom(3, 2, 3, source);
+
+            Assert.Equal(TileColor.Red, grid.Get(0, 0));
+            Assert.Equal(TileColor.Blue, grid.Get(1, 0));
+            Assert.Equal(TileColor.Blue, grid.Get(2, 1));
+        }
+
         [Fact]
         public void MaxColorCount_MatchesSpec_Six()
         {

@@ -134,3 +134,20 @@ Geçen 9 test ve gerekçesi (hepsi derleme zamanı sabitini ya da enum değerini
 6. **`Set` ile tanımsız enum değeri** (`(TileColor)6` ya da `-1`): spec yalnız "boş ya da bir renk" diyor, kabul mü hata mı belirtmiyor; test yazılmadı.
 7. **Seed 1 ve 2 testi `max` seçimi.** Spec "ilk 10 değer aynı değil" diyor ama hangi `max` ile çekileceğini söylemiyor. `Next(int.MaxValue)` kullandım (küçük `max`'te tesadüfi eşitlik olasılığını düşürmek için). Test, dizinin eleman eleman hepsinin farklı olduğunu değil, iki dizinin eşit olmadığını kontrol ediyor.
 8. **Kaba eşitlik eşiği seed'e bağlı.** 6000 çekilişte beklenen 1000, standart sapma ~29; 800 eşiği ~7 sapma aşağıda. Doğru bir SplitMix64 ile dört seed'de de yanlışlıkla kırmızı olma olasılığı ihmal edilebilir, ama değerler uygulama gelmeden görülemedi.
+
+## Ek (2026-11-14)
+
+İki yeni spec davranışı için test eklendi (yalnız `tests/Core.Tests/`; eski testlere dokunulmadı). Toplam 23 yeni test durumu: 21 kırmızı, 2 yeşil.
+
+| Spec maddesi | Test | Durum |
+|---|---|---|
+| Grid: `Set` tanımsız renk → `ArgumentOutOfRangeException` | `GridTests.Set_UndefinedColor_ThrowsArgumentOutOfRange` (6, 7, 99, -1, `int.MaxValue`, `int.MinValue`) | kırmızı ×6 |
+| Aynı madde, hata sonrası hücre değişmez | `GridTests.Set_UndefinedColor_LeavesCellUnchanged` | kırmızı |
+| Aynı madde, tanımlı altı renk ve `null` kabul | `GridTests.Set_EachDefinedColorAndNull_StillAccepted` | yeşil (regresyon koruması) |
+| Factory: aralık dışı kaynak değeri → `InvalidOperationException` | `GridFactoryTests.CreateRandom_SourceValueOutOfRange_ThrowsInvalidOperation` (`colorCount` 1/3/6, değer `colorCount`, üstü, negatif, uç int'ler) | kırmızı ×10 |
+| Aynı madde, kötü değer ilk / son hücrede | `..._BadValueOnlyOnFirstCell_...`, `..._BadValueOnlyOnLastCell_...` (3 ve -1) | kırmızı ×4 |
+| Aralık uç değerleri (`0` ve `colorCount-1`) hâlâ kabul | `CreateRandom_SourceValuesAtRangeEdges_AreAccepted` | yeşil |
+
+Not: "grid döndürülmez" maddesi `Assert.Throws` ile doğal olarak kapsanır. Hata sonrası kaynağın durumu spec'te yok, test yazılmadı.
+
+`dotnet test`: `Başarısız! - Başarısız: 21, Başarılı: 225, Atlanan: 0, Toplam: 246` (eski 223 yeşil).

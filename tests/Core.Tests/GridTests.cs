@@ -5,6 +5,46 @@ namespace BlastGame.Core.Tests
 {
     public class GridTests
     {
+        [Theory]
+        [InlineData(6)]
+        [InlineData(7)]
+        [InlineData(99)]
+        [InlineData(-1)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        public void Set_UndefinedColor_ThrowsArgumentOutOfRange(int value)
+        {
+            var grid = new Grid(3, 2);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(1, 1, (TileColor)value));
+        }
+
+        [Fact]
+        public void Set_UndefinedColor_LeavesCellUnchanged()
+        {
+            var grid = new Grid(3, 2);
+            grid.Set(1, 1, TileColor.Blue);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(1, 1, (TileColor)99));
+
+            Assert.Equal(TileColor.Blue, grid.Get(1, 1));
+        }
+
+        [Fact]
+        public void Set_EachDefinedColorAndNull_StillAccepted()
+        {
+            var grid = new Grid(3, 2);
+
+            foreach (TileColor color in Enum.GetValues(typeof(TileColor)))
+            {
+                grid.Set(0, 0, color);
+                Assert.Equal(color, grid.Get(0, 0));
+            }
+
+            grid.Set(0, 0, null);
+            Assert.Null(grid.Get(0, 0));
+        }
+
         // ---- Constants ----
 
         [Fact]
