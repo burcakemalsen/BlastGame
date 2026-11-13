@@ -15,5 +15,7 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
+      - name: Restore (locked)
+        run: dotnet restore tests/BlastGame.Tests.slnx --locked-mode
       - name: Run rule-layer tests
-        run: dotnet test tests/BlastGame.Tests.slnx --configuration Release
+        run: dotnet test tests/BlastGame.Tests.slnx --configuration Release --no-restore
