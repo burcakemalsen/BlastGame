@@ -37,7 +37,7 @@ Orchestrator yalnız beyindir: iş üretmez, yaptırır ve denetler. Her adım y
 | Kurulumcu | Sonnet 5.5 medium | Adım 0'ı yapar |
 | Kodcu | Adıma göre Sonnet 5.5 medium ya da Opus 5.5 | Stub'ları ve uygulamayı yazar |
 | Testçi | Basit adım (1, 2, 4, 5, 9) ve küçük ek: Sonnet 5.5 medium; zor adım (3, 6, 7, 8): Opus 5.5 medium | Spec ve stub imzalarından, kodu kırmaya çalışan testler yazar |
-| Kontrolcü 1 | Sonnet 5.5 | Açık arar, bilerek bozma dener, rapor yazar |
+| Kontrolcü 1 | Opus 5.5 medium (karar, 2026-11-14: orchestrator ajan işini yeniden okumaz, güvenilecek kontrol güçlü modelde) | Açık arar, bilerek bozma dener, rapor yazar |
 | Kontrolcü 2 | Gemini 4 Argon (`agy`), yalnız zor adımlarda (3, 6, 7, 8) | Kodu spec'le karşılaştırır, kaçan uç durumu arar; farklı model ailesi. Kotası biterse ya da `agy` çalışmazsa atlanır ve rapora not düşülür |
 
 Kodcu modeli:
@@ -59,7 +59,7 @@ Biri geçmeden sonrakine geçilmez:
 1. **Spec** (`docs/specs/NN-ad.md`): amaç, davranış, örnekler, uç durumlar, **arayüz sözleşmesi** (sınıf ve metot adları, aldıkları, döndürdükleri), elle kontrol listesi. Orchestrator yazar, ürün sahibi onaylar.
 2. **Stub:** Kodcu sözleşmedeki sınıfları içi boş yazar (stub: kapı numarası asılmış ama içi boş oda; çağrılınca "henüz yazılmadı" hatası verir). Orchestrator sözleşmeyle karşılaştırır.
 3. **Testler:** Testçi yazar. Çalıştırılır, **kırmızı** olmalı. Derleniyor ama hepsi geçiyorsa test bir şey ölçmüyordur, durulur.
-4. **Kod:** Kodcu yazar, tüm testler **yeşil**. `tests/` klasörüne dokunmaz. Orchestrator diff'i okur.
+4. **Kod:** Kodcu yazar, tüm testler **yeşil**. `tests/` klasörüne dokunmaz. Orchestrator testleri çalıştırır ve `tests/`'e dokunulmadığını görür; kodu kontrolcü okur (`docs/RULES.md`, Orchestrator).
 5. **Bağımsız kontrol:** Claude kontrolcü her adımda; Gemini yalnız zor adımlarda (3, 6, 7, 8), Claude'la paralel. Raporlar `reports/NN-ad-claude.md` ve `reports/NN-ad-gemini.md`. Bulgu kod hatasıysa kodcuya, eksik testse testçiye gider; sonra tekrar kontrol.
 6. **Ürün sahibi:** Editor'de ve telefonda oynar, orchestrator kodu anlatır. Telefon denemesi için orchestrator, kontrol kapısı geçince adımın dalından WebGL derler ve taramadan sonra `gh-pages`'e yayımlar (önizleme; `main`'e merge'den önce).
 7. **Push, PR, merge:** push öncesi taramadan sonra; ayrıntı bölüm 9. Kapı 6'dan sonra kod değiştiyse WebGL yeniden yayımlanır.
@@ -89,8 +89,8 @@ Adım 5 notu: Unity'nin `JsonUtility`'si `UnityEngine` içinde olduğu için kur
 ### Faz 2: ayırt edici kısım
 | # | Adım | Bitti tanımı |
 |---|---|---|
-| 6 | Özel öğe (özgün tasarım) | Tasarım ürün sahibiyle konuşulup spec'e yazıldı; büyük grup özel öğe üretiyor, özel öğe kendi etkisini yapıyor |
-| 7 | Engel (özgün tasarım) | Tasarım spec'te; engel level dosyasından geliyor, kuralına göre kırılıyor |
+| 6 | Özel öğe (özgün tasarım) | Tasarım ürün sahibiyle konuşulup spec'e yazıldı; büyük grup özel öğe üretiyor, özel öğe kendi etkisini yapıyor; etkinin animasyonu var |
+| 7 | Engel (özgün tasarım) | Tasarım spec'te; engel level dosyasından geliyor, kuralına göre kırılıyor; level hedefi olabiliyor; kırılma animasyonu |
 | 8 | Çıkmaz durum | Hiç hamle kalmadığı algılanıyor ve grid oynanabilir hale getiriliyor |
 | 9 | Cila ve sunum | Basit animasyon, güzel görsel, README'de ekran görüntüsü, kısa video, tarayıcıda oynama linki (GitHub Pages) ve GitHub Releases'te APK |
 
@@ -129,5 +129,5 @@ Hedef: repoya bakan biri, her adımın nasıl yapıldığını (spec, test önce
 - **PR (pull request):** 7. kapıda dal push'lanır ve `main`'e PR açılır. PR açıklaması: adımın amacı, spec linki, değişenler, test sonucu (kaç test, hepsi yeşil), kontrolcü raporlarının linki ve bulguların nasıl kapandığı, ürün sahibinin elle kontrolü (ekran görüntüsüyle). Şablon `.github/pull_request_template.md`'de durur.
 - **CI:** GitHub Actions her push'ta ve PR'da `dotnet test` çalıştırır; README'de durum rozeti (badge) görünür. PR yalnız CI yeşilken birleştirilir. Unity derlemesi CI'da çalışmaz (Unity lisansı gerektirir); yerelde `scripts/unity-check.ps1` ile kontrol edilir.
 - **Merge:** Merge commit ile (squash yok), böylece dalın TDD sırası (kırmızı test commit'i, sonra yeşil kod) geçmişte kalır; `main`'in kendi çizgisi yalnız yeşil hallerden oluşur. Merge'den sonra dal silinir.
-- **Sürüm etiketi:** Faz 1 sonunda `v0.1.0`, Faz 2 sonunda `v1.0.0`; her etikette GitHub Releases'e APK ve kısa değişiklik notu; WebGL sürümü GitHub Pages'te güncellenir.
+- **Sürüm etiketi:** Faz 1 sonunda etiket ve release yok (karar, 2026-11-14: temel sağlam, ama animasyon ve level tasarımı gösterime hazır değil). İlk etiket `v1.0.0`, Faz 2 sonunda: GitHub Releases'e APK ve kısa değişiklik notu; WebGL sürümü GitHub Pages'te güncellenir.
 - **PR'ı kim açar:** orchestrator, `gh` ile; açıklama metnini de o yazar.
