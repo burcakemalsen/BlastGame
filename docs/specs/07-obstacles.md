@@ -237,6 +237,13 @@ public sealed class LevelData                                 // eklenenler
 }
 ```
 
+**Netleştirmeler (stub aşamasında, orchestrator, 2026-11-14):**
+- Yeni tiplerin ve `Cell`'in engel/balon halinin `ToString` biçimi sözleşme değildir (boş olmayan metin döner).
+- `GameSession` 6 parametreli kurucu denetim sırası: `grid`, `colorCount`, `moves`, `goals` (null, sonra renk kuralları), `obstacleGoals` null, ikisi birden boş → `ArgumentException(goals)`, `obstacleGoals` kuralları, `random`.
+- `LevelData` 7 parametreli kurucu denetim sırası: `width`, `height`, `colorCount`, `moves`, `goals` (null, sonra renk kuralları), `obstacles` (null, sonra kurallar), `obstacleGoals` null, ikisi birden boş → `ArgumentException(goals)`, `obstacleGoals` kuralları.
+- `WithBalloon` renkli olmayan hücrede `false` ile de `InvalidOperationException` atar.
+- `Remaining(ObstacleKind)` tanımsız tür ya da hedef olmayan tür → `ArgumentException(kind)`.
+
 **Sözleşme değişikliği notu:** `CellKind`'a değer eklenir. `GravityRules.Collapse` ve `RefillRules.Fill` Sandık varken yeni davranışa uyar; mevcut testlerde Sandık olmadığı için sonuç değişmez. Engelsiz grid'de bütün eski davranışlar aynen kalır. Mevcut testlerden sözleşme gereği güncellenmesi gereken olursa testçi günceller (RULES, Onay).
 
 ## Görüntü katmanı (`Assets/Scripts/View/`)
