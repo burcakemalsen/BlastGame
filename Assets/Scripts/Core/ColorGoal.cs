@@ -10,48 +10,51 @@ namespace BlastGame.Core
 
         public ColorGoal(TileColor color, int count)
         {
-            throw new NotImplementedException();
+            if (count < 1)
+                throw new ArgumentOutOfRangeException(nameof(count), "A goal needs at least 1 tile.");
+            _color = color;
+            _count = count;
         }
 
         public TileColor Color
         {
-            get { throw new NotImplementedException(); }
+            get { return _color; }
         }
 
         public int Count
         {
-            get { throw new NotImplementedException(); }
+            get { return _count; }
         }
 
         public bool Equals(ColorGoal other)
         {
-            throw new NotImplementedException();
+            return _color == other._color && _count == other._count;
         }
 
         public override bool Equals(object obj)
         {
-            throw new NotImplementedException();
+            return obj is ColorGoal other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            return unchecked((int)_color * 397 ^ _count);
         }
 
         /// <summary>Formats as "Red x20".</summary>
         public override string ToString()
         {
-            throw new NotImplementedException();
+            return _color + " x" + _count;
         }
 
         public static bool operator ==(ColorGoal a, ColorGoal b)
         {
-            throw new NotImplementedException();
+            return a.Equals(b);
         }
 
         public static bool operator !=(ColorGoal a, ColorGoal b)
         {
-            throw new NotImplementedException();
+            return !a.Equals(b);
         }
     }
 }
