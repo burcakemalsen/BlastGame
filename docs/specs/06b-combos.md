@@ -116,6 +116,12 @@ public static class SpecialRules                                     // eklenen
 ```
 `TurnRules.Tap` özel öğeye dokunuşta `SpecialRules.Tap`'i kullanır. İmzalar değişmez.
 
+**Netleştirmeler (stub aşamasında, orchestrator, 2026-11-14):**
+- 7 parametreli `TurnEffect` kurucusu yalnız yazılan denetimleri yapar (`kind` ile `mergedCount`/`converted` uyumu denetlenmez).
+- `SpecialRules.Tap`'te boş hücre de "özel değil" sayılır → `ArgumentException`.
+- Katılımcı tek ise `SpecialRules.Tap`'in sonucu `Activate` ile birebir aynıdır (çekiliş yok).
+- Katılımcı bağı yalnız özel hücreler arasındadır; arada boş ya da renkli hücre bağı koparır.
+
 **Sözleşme değişikliği notu:** Adım 6'da yan yana iki özel öğeden birine dokunmak tekli etkiydi; artık kombodur. `TurnRules`/`GameSession` düzeyinde yan yana özel öğe içeren mevcut testler (ör. Adım 6 Örnek 3: Bomb yanında Rocket) yeni davranışa göre güncellenir; testçi yapar (RULES, Onay). `SpecialRules.Activate` testleri değişmez.
 
 ## Görüntü katmanı (`Assets/Scripts/View/`)
