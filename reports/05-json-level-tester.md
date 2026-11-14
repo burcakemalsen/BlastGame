@@ -36,3 +36,6 @@ Başarısız! - Başarısız:    77, Başarılı:   681, Atlanan:     0, Toplam:
 - `LevelData` kurucusunda `goals` içinde `colorCount` dışı renk için `ParamName` `goals` varsayıldı (spec "parametrenin adı" diyor).
 - `Goals` "salt okunur kopya": yalnız kaynak liste değişince etkilenmeme sınandı; dönen listenin türü (örn. `List<T>`'e atılabilmesi) sınanmadı.
 - Boyut: ~80 sınırı içinde (77).
+
+## Düzeltme
+`BadGoalLists` içindeki `new ColorGoal(TileColor.Red, 0)` kurucuda patlıyordu; `default(ColorGoal)` yapıldı (2026-11-14, ürün sahibi onayı). Sonuç: `Başarılı!  - Başarısız:     0, Başarılı:   761, Atlanan:     0, Toplam:   761` (kodcunun uygulamasıyla).

@@ -63,7 +63,7 @@ namespace BlastGame.Core.Tests
             yield return new object[] { new List<ColorGoal>() };
             yield return new object[] { new List<ColorGoal> { new ColorGoal(TileColor.Blue, 5) } }; // colorCount 2
             yield return new object[] { new List<ColorGoal> { new ColorGoal(TileColor.Red, 5), new ColorGoal(TileColor.Red, 3) } };
-            yield return new object[] { new List<ColorGoal> { new ColorGoal(TileColor.Red, 0) } };
+            yield return new object[] { new List<ColorGoal> { default(ColorGoal) } }; // Count 0; the ColorGoal constructor would reject it
         }
 
         [Theory]
