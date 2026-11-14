@@ -12,19 +12,19 @@ namespace BlastGame.Core
         private readonly IReadOnlyList<ClearedCell> _cleared;
         private readonly int _mergedCount;
         private readonly IReadOnlyList<ClearedCell> _converted;
-        private readonly IReadOnlyList<ObstacleHit> _hits = NoHits;
+        private readonly IReadOnlyList<ObstacleHit> _hits;
+
+        /// <summary>Combo-aware constructor. Stores the lists as they are (no copy). Hits is empty.</summary>
+        public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created,
+                          int triggeredBy, int mergedCount, IReadOnlyList<ClearedCell> converted)
+            : this(kind, origin, cleared, created, triggeredBy, mergedCount, converted, NoHits)
+        {
+        }
 
         /// <summary>Obstacle-aware constructor. Stores the lists as they are (no copy).</summary>
         public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created,
                           int triggeredBy, int mergedCount, IReadOnlyList<ClearedCell> converted,
                           IReadOnlyList<ObstacleHit> hits)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>Combo-aware constructor. Stores the lists as they are (no copy).</summary>
-        public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created,
-                          int triggeredBy, int mergedCount, IReadOnlyList<ClearedCell> converted)
         {
             if (cleared == null)
                 throw new ArgumentNullException(nameof(cleared));
@@ -34,6 +34,8 @@ namespace BlastGame.Core
                 throw new ArgumentOutOfRangeException(nameof(triggeredBy), "TriggeredBy must be -1 or an effect index.");
             if (mergedCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(mergedCount), "MergedCount cannot be negative.");
+            if (hits == null)
+                throw new ArgumentNullException(nameof(hits));
 
             Kind = kind;
             Origin = origin;
@@ -42,6 +44,7 @@ namespace BlastGame.Core
             TriggeredBy = triggeredBy;
             _mergedCount = mergedCount;
             _converted = converted;
+            _hits = hits;
         }
 
         /// <summary>Stores the cleared list as it is (no copy). MergedCount: 0 for Group, else 1; Converted is empty.</summary>

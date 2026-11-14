@@ -5,56 +5,63 @@ namespace BlastGame.Core
     /// <summary>One hit on a Pinata or Crate, with the cell before and after.</summary>
     public readonly struct ObstacleHit : IEquatable<ObstacleHit>
     {
+        private readonly CellPos _pos;
+        private readonly Cell _before;
+        private readonly Cell _after;
+
         public ObstacleHit(CellPos pos, Cell before, Cell after)
         {
-            throw new NotImplementedException();
+            _pos = pos;
+            _before = before;
+            _after = after;
         }
 
         public CellPos Pos
         {
-            get { throw new NotImplementedException(); }
+            get { return _pos; }
         }
 
         /// <summary>A Pinata or a Crate.</summary>
         public Cell Before
         {
-            get { throw new NotImplementedException(); }
+            get { return _before; }
         }
 
         /// <summary>Cell.Empty (broken) or a Crate with one layer less.</summary>
         public Cell After
         {
-            get { throw new NotImplementedException(); }
+            get { return _after; }
         }
 
         public bool Equals(ObstacleHit other)
         {
-            throw new NotImplementedException();
+            return _pos == other._pos && _before == other._before && _after == other._after;
         }
 
         public override bool Equals(object obj)
         {
-            throw new NotImplementedException();
+            return obj is ObstacleHit other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            return unchecked((_pos.GetHashCode() * 397 ^ _before.GetHashCode()) * 397 ^ _after.GetHashCode());
         }
 
+        /// <summary>Format: "(x, y) Obstacle(Crate, 2) -> Obstacle(Crate, 1)".</summary>
         public override string ToString()
         {
-            throw new NotImplementedException();
+            return _pos + " " + _before + " -> " + _after;
         }
 
         public static bool operator ==(ObstacleHit a, ObstacleHit b)
         {
-            throw new NotImplementedException();
+            return a.Equals(b);
         }
 
         public static bool operator !=(ObstacleHit a, ObstacleHit b)
         {
-            throw new NotImplementedException();
+            return !a.Equals(b);
         }
     }
 }

@@ -7,8 +7,9 @@ namespace BlastGame.Core
     public static class RefillRules
     {
         /// <summary>
-        /// Fills every empty cell (y ascending, then x ascending) with a color from the random source
-        /// and returns the filled cells in that order.
+        /// Fills every empty cell above the topmost Crate of its column (every empty cell when the column has
+        /// no Crate), y ascending, then x ascending, with a color from the random source, and returns the
+        /// filled cells in that order. Empty cells below a Crate stay empty and take no draw.
         /// </summary>
         public static IReadOnlyList<CellPos> Fill(Grid grid, int colorCount, IRandomSource random)
         {
@@ -20,12 +21,25 @@ namespace BlastGame.Core
             if (random == null)
                 throw new ArgumentNullException(nameof(random));
 
+            // Lowest row each column may fill: just above its topmost Crate.
+            var lowest = new int[grid.Width];
+            for (int x = 0; x < grid.Width; x++)
+                for (int y = grid.Height - 1; y >= 0; y--)
+                {
+                    Cell cell = grid.Get(x, y);
+                    if (cell.IsObstacle && cell.Obstacle == ObstacleKind.Crate)
+                    {
+                        lowest[x] = y + 1;
+                        break;
+                    }
+                }
+
             var filled = new List<CellPos>();
             for (int y = 0; y < grid.Height; y++)
             {
                 for (int x = 0; x < grid.Width; x++)
                 {
-                    if (grid.Get(x, y).IsEmpty) filled.Add(new CellPos(x, y));
+                    if (y >= lowest[x] && grid.Get(x, y).IsEmpty) filled.Add(new CellPos(x, y));
                 }
             }
 

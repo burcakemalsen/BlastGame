@@ -8,7 +8,7 @@ namespace BlastGame.Core
     {
         /// <summary>
         /// Cells connected to (x, y) through same-colored 4-neighbours, start included,
-        /// ordered by y then x. An empty or special start cell gives an empty list.
+        /// ordered by y then x. Balloons do not matter. An empty, special or obstacle start cell gives an empty list.
         /// </summary>
         public static IReadOnlyList<CellPos> FindGroup(Grid grid, int x, int y)
         {
@@ -20,7 +20,7 @@ namespace BlastGame.Core
 
             var result = new List<CellPos>();
             Cell start = grid.Get(x, y);
-            if (start.IsEmpty || start.IsSpecial) return result;
+            if (start.Kind != CellKind.Color) return result;
 
             var visited = new bool[grid.Width, grid.Height];
             var stack = new Stack<CellPos>();
@@ -47,7 +47,7 @@ namespace BlastGame.Core
         private static void TryVisit(Grid grid, Cell start, bool[,] visited, Stack<CellPos> stack, int x, int y)
         {
             if (!grid.IsInside(x, y) || visited[x, y]) return;
-            if (grid.Get(x, y) != start) return;
+            if (!grid.Get(x, y).IsColor(start.Color)) return;
             visited[x, y] = true;
             stack.Push(new CellPos(x, y));
         }
