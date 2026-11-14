@@ -41,6 +41,15 @@ namespace BlastGame.Core
         }
 
         /// <summary>
+        /// Tap on the special item at (x, y): a combo when 2+ connected special cells take part, otherwise the single effect;
+        /// then the chain. Does not apply gravity or refill.
+        /// </summary>
+        public static IReadOnlyList<TurnEffect> Tap(Grid grid, int x, int y, IRandomSource random)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
         /// Runs the special item at (x, y), finishes the chain and returns the effects in run (queue) order.
         /// Does not apply gravity or refill.
         /// </summary>
