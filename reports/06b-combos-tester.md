@@ -53,3 +53,16 @@ Hepsinde ölçülen şey korunup özel öğeler ayrıldı: yan yana duran öğe 
 5. Zincirdeki tekli etkilerde `MergedCount = 1`, `Converted` boş varsayıldı.
 6. Geçersiz çekilişte `GameSession` durumunun (hamle, hedef, grid) değişmediği varsayıldı (Adım 6'daki karşılığı gibi).
 7. Beklenen değerler elle hesaplandı. Uygulama olmadığı için doğrulanamadı; kodcu uygulayınca kırmızı kalan test olursa önce hesap kontrol edilmeli.
+
+## Kontrol sonrası eklenenler
+Kaynak: Gemini kontrolünün eksik test önerileri (`reports/06b-combos-gemini.md`). Dosya: `tests/Core.Tests/ComboReviewFollowUpTests.cs`. Yeni test: **6** (`Theory` satırları dahil). Mevcut testler değişmedi.
+
+- Seçim önceliği (1 Orb + 2 Bomb → `OrbBomb`; 2 Orb + 1 Bomb → `OrbOrb`; 1 Orb + 2 Rocket → `OrbRocket`) → `Tap_RepeatedKindsWithOneOrb_OrbComboWins` (3 satır). Not: Orb + 2 Rocket durumu, `ComboSelectionTests`'te `BrHHB` satırıyla zaten vardı; burada roketler Orb'un öbür yanında olacak şekilde tekrarlandı.
+- `RocketBomb`'un merkez dışı şeritleri (`ox-1` sütununda bomba, `oy+1` satırında roket) → `Tap_RocketBombOffCenterStrips_ItemsQueuedRunAlone`. İkisi de y/x sırasıyla kuyruğa giriyor, tekli çalışıyor (`TriggeredBy 0`, `MergedCount 1`).
+- `GameSession`, `Converted` kalandan fazla → hedef 0'da duruyor → `SessionTap_ConvertedMoreThanGoal_RemainingStopsAtZero`
+- `GameSession`, son hamlede kombo hedefi bitirmiyor → `Lost` → `SessionTap_ComboOnLastMoveGoalNotMet_Lost`
+- 7 parametreli kurucuda null dışındaki hata sırası spec'te olmadığı için test yazılmadı.
+
+```
+Başarılı!  - Başarısız:     0, Başarılı:  1028, Atlanan:     0, Toplam:  1028, Süre: 97 ms - Core.Tests.dll (net10.0)
+```
