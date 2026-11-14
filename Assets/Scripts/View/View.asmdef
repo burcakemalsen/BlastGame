@@ -2,7 +2,8 @@
     "name": "View",
     "rootNamespace": "BlastGame.View",
     "references": [
-        "Core"
+        "Core",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
