@@ -126,16 +126,16 @@ public static class TurnRules
 `TurnResult` kurucusu `null` liste alırsa `ArgumentNullException`; kontrol parametre sırasıyla (`blasted`, `moves`, `filled`), hata ilk `null` parametrenin adını taşır. Listeler kopyalanmadan saklanır. Dosya başına bir tip: `CellMove.cs`, `GravityRules.cs`, `RefillRules.cs`, `TurnResult.cs`, `TurnRules.cs`. C# 9 sınırı: `record` ve `init` yok.
 
 ## Görüntü katmanı (`Assets/Scripts/View/`, namespace `BlastGame.View`)
-Otomatik test edilmez; kapısı elle kontrol listesi. Sahne dosyasına dokunulmaz; ayarlar (8x10, 5 renk, seed 42) aynen.
+Otomatik test edilmez; kapısı elle kontrol listesi. Sahne dosyasına dokunulmaz; ayarlar: **9x9** (ürün sahibi kararı, 2026-11-14; önceki 8x10 dikey ekranda uzun duruyordu, kare tahta üstte Adım 4'ün bilgi çubuğuna yer bırakır), 5 renk, seed 42.
 
-- **Tek kaynak:** `GameBootstrap` bir `SeededRandom(42)` oluşturur; grid'i onunla üretir ve aynı nesneyi doldurma için kullanmaya devam eder. Böylece ilk dizilim Adım 1-2'dekiyle aynı kalır ve oyun baştan sona tek seed'e bağlıdır.
+- **Tek kaynak:** `GameBootstrap` bir `SeededRandom(42)` oluşturur; grid'i onunla üretir ve aynı nesneyi doldurma için kullanmaya devam eder. Böylece oyun baştan sona tek seed'e bağlıdır. (Boyut 9x9 olduğu için ilk dizilim Adım 1-2'dekinden farklıdır; aynı seed her açılışta yine aynı dizilimi verir.)
 - Dokunuşta `BlastRules.Blast` yerine `TurnRules.Tap(_grid, x, y, ColorCount, _random)` çağrılır, sonra `_view.Refresh()`. Girdi ve ekran→hücre çevirisi Adım 2'deki gibi.
 - **Sprite önbelleği (Backlog maddesi):** kare sprite'ı ve dokusu bir kez üretilir ve saklanır; `Build` tekrar çağrılsa da yeni doku oluşturmaz. `Refresh` yeni doku ya da nesne oluşturmaz (Adım 2'deki gibi). Madde Backlog'dan silinir.
 - Animasyon yok: dokunuştan sonraki karede grid yeni haliyle görünür.
 
 ## Elle kontrol listesi
 1. `scripts/unity-check.ps1` 0 ile çıkar.
-2. Editor'de Play: ilk dizilim Adım 2'dekiyle aynı.
+2. Editor'de Play: 9x9 grid, ekrana sığıyor; Play'i durdurup başlatınca aynı ilk dizilim.
 3. 2+ gruba tıklayınca grup kaybolur, üstündeki kareler iner, sütunların tepesi yeni renklerle dolar; grid'de boşluk kalmaz.
 4. Tek kareye tıklamak hiçbir şey yapmaz; sonra yapılan patlamanın renkleri, tek kareye hiç tıklanmamış gibi aynıdır.
 5. Play'i durdurup başlatıp aynı tıklama dizisini tekrarlayınca aynı grid'ler oluşur (en az 3 tıklama, ekran görüntüsüyle karşılaştırma).
