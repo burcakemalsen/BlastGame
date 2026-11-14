@@ -35,3 +35,10 @@ Her bozmadan sonra `git checkout -- Assets/`; son durumda worktree temiz.
 - **Kural 4 / WebGL:** Core'da `UnityEngine`, `System.Random`, `DateTime`, C# 9 üstü sözdizimi aranıp bulunmadı. Newtonsoft yalnız `LevelParser.cs` ve asmdef'te; public imzada yok. `DeserializeObject`/`ToObject` yok. Tekrarlanan anahtar iç içe nesnede de reddediliyor (test var).
 - **Test dokunulmazlığı:** `main..HEAD -- tests/` yalnız `test(core)` ve planlı `chore` (csproj + lock). Üç `feat` commit'inde `tests/` boş. `12636b5` diff'i tek satır (`default(ColorGoal)`); `05131fc` yalnız yeni dosya ekliyor.
 - **Görüntü (okuyarak):** ordinal sıralama, bozuk/eksik dosyada `Debug.LogError` + panel ve oyun başlamıyor, Next/Try again/All levels done + Play again akışı, eski `GridView` ve hedef nesneleri yok ediliyor.
+
+## Tekrar kontrol (`0135bd7`)
+`Başarılı!  - Başarısız: 0, Başarılı: 766, Atlanan: 0, Toplam: 766`
+- `8c29409`: yalnız ekleme (silinen satır 0). M4 → `Parse_UnknownGoalFieldAndBadColor_ReportsUnknownFieldFirst`, M10 → `Parse_TwoInvalidNumbers_ReportsEarlierFieldInOrder` yakalıyor.
+- `7270d3a`: zararsız ama etkisiz. Bulgu 2 benim yanlışımdı: `{...} {}` için `reader.Read()` hatayı kütüphane mesajıyla, satır/konumla kendisi fırlatıyor (denendi: `line 1, position 15`). 68. satıra ulaşılmıyor. Ulaşılsa da bu kurucu `Message`'a konum eklemiyor.
+- `0135bd7`: 3×164 + 2×6 = 504 ≤ ~538 (1170×2532), sığıyor. 1 ve 2 hedef sağa yaslı, sorun yok. "Done" (44 pt) 100 birimlik etikette ~5 birim taşabilir, `Overflow` modu kesmez. Önemsiz.
+Kalan bulgu yok.
