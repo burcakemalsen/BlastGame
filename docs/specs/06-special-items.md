@@ -197,6 +197,13 @@ public static class SpecialRules
 
 `TurnRules.Tap` ve `GameSession.Tap` imzaları değişmez; davranışları yukarıdaki kurallara göre genişler. Etkisiz dokunuşta (`HasBlasted` false) `Effects` boştur. `GameSession` oyun bittikten sonra döndürdüğü boş sonuçta da `Effects` boştur.
 
+**Netleştirmeler (stub aşamasında çıkan sorular, orchestrator, 2026-11-14):**
+- `ForGroup`: denetimler boyuttan bağımsız, yazılan sırayla; 0-4 boyutta tanımsız renk de `ArgumentOutOfRangeException(color)`.
+- 4 parametreli `TurnResult` kurucusu: null denetimi `blasted`, `moves`, `filled`, `effects` sırasıyla; `Blasted` ile etkilerin tutarlılığı kurucuda denetlenmez.
+- `TurnEffect` kurucusu yalnız yazılan iki denetimi yapar (`kind`/`created` uyumu ve tanımsız `kind` denetlenmez).
+- `Activate` tahta dışı hatasında `ParamName` `x` ya da `y` (`GroupFinder` gibi).
+- Orb hücresinde `Cell.Special` `SpecialKind.Orb` döner.
+
 **Sözleşme değişikliği notu:** `GroupFinder.FindGroup`/`BlastRules.Blast` özel hücre için yeni bir durum kazanır (önceden özel hücre yoktu); `GameSession`'ın hedef sayımı renk başına olur (tek renkli grupta sonuç aynı). Mevcut testlerin bunlar yüzünden değişmesi gerekirse testçi yapar (RULES, Onay).
 
 ## Görüntü katmanı (`Assets/Scripts/View/`, namespace `BlastGame.View`)
