@@ -747,7 +747,7 @@ namespace BlastGame.Core.Tests
         private static string Snapshot(GameSession s)
         {
             return s.Status + "|" + s.MovesLeft + "|" + s.Remaining(TileColor.Red) + "|" +
-                   s.Remaining(TileColor.Blue) + "|" + string.Join("/", TestGrid.Dump(s.Grid));
+                   s.Remaining(TileColor.Blue) + "|" + string.Join("/", SpecialGrid.Dump(s.Grid));
         }
     }
 }
