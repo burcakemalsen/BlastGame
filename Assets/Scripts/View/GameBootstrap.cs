@@ -142,7 +142,7 @@ namespace BlastGame.View
             if (_view != null) Destroy(_view.gameObject);
             _view = new GameObject("GridView").AddComponent<GridView>();
             _view.Build(grid);
-            _view.SetGoalTarget(GoalWorldPosition);
+            _view.SetGoalTarget(GoalWorldPosition, ShowFlyer, _hud.HideFlyers);
             _fitter.Setup(_camera, grid.Width, grid.Height);
 
             _hud.SetSeed(seed);
@@ -160,6 +160,14 @@ namespace BlastGame.View
             Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, -_camera.transform.position.z));
             world.z = 0f;
             return world;
+        }
+
+        /// <summary>Draws a flying item on the HUD at a board position, sized in board units.</summary>
+        private void ShowFlyer(int index, Sprite sprite, Color color, Vector3 boardPos, float size)
+        {
+            Vector3 screen = _camera.WorldToScreenPoint(boardPos);
+            float pixelsPerUnit = _camera.pixelHeight / (2f * _camera.orthographicSize);
+            _hud.ShowFlyer(index, sprite, color, new Vector2(screen.x, screen.y), size * pixelsPerUnit);
         }
 
         private void Update()

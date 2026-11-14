@@ -65,9 +65,10 @@ namespace BlastGame.View
         private const int WaveOrder = 5;
         private const int FlashOrder = 6;
 
-        private enum TileAnim { None, Shrink, Collect, FlashOut, Hide, OrbSelf, MergeCenter, Shake }
+        private enum TileAnim { None, Shrink, Collect, FlashOut, Hide, OrbSelf, MergeCenter }
 
-        private enum FxKind { RocketHalf, RocketTrail, BombFlash, BombWave, Beam, Shake, Particle }
+        // TileShake: one cell wobbles (a Crate losing a layer); several can play on one cell, one after another.
+        private enum FxKind { RocketHalf, RocketTrail, BombFlash, BombWave, Beam, Shake, Particle, TileShake }
 
         // Bright confetti and candy colors for a broken Pinata.
         private static readonly Color[] Confetti =
@@ -97,6 +98,7 @@ namespace BlastGame.View
             public float Size;              // flash/wave: end scale; shake: amount; particle: scale
             public float Spin;              // particle: degrees per second
             public float Stretch;           // particle: width / height
+            public CellPos Cell;            // tile shake: the cell
         }
 
         // A tile that takes a new look mid-timeline (a colored cell turned into an item, the Orb of a combo).
@@ -125,6 +127,8 @@ namespace BlastGame.View
         private float _popStart;
         private bool _isAnimating;
         private Func<ObstacleKind, Vector3?> _goalTarget;
+        private Action<int, Sprite, Color, Vector3, float> _showFlyer; // index, sprite, tint, board position, size
+        private Action _hideFlyers;
         private readonly List<SpriteRenderer> _flyers = new List<SpriteRenderer>(); // collected Anchors, reused
 
         /// <summary>True while a turn is being animated; taps should be ignored meanwhile.</summary>
@@ -133,10 +137,18 @@ namespace BlastGame.View
             get { return _isAnimating; }
         }
 
-        /// <summary>Where the goal icon of an obstacle kind is, in board space (null: no icon, the item just fades).</summary>
-        public void SetGoalTarget(Func<ObstacleKind, Vector3?> goalTarget)
+        /// <summary>
+        /// Where the goal icon of an obstacle kind is, in board space (null: no icon, the item just fades), and
+        /// who draws a flying item on its way there: the board camera does not reach the HUD bar, so the flight
+        /// is drawn on the HUD (showFlyer: index, sprite, tint with alpha, board position, size in board units).
+        /// Without showFlyer the board draws the flight itself.
+        /// </summary>
+        public void SetGoalTarget(Func<ObstacleKind, Vector3?> goalTarget, Action<int, Sprite, Color, Vector3, float> showFlyer,
+                                  Action hideFlyers)
         {
             _goalTarget = goalTarget;
+            _showFlyer = showFlyer;
+            _hideFlyers = hideFlyers;
         }
 
         public void Build(Grid grid)
@@ -274,6 +286,7 @@ namespace BlastGame.View
                     yield return null;
                 }
                 for (int i = 0; i < _flyers.Count; i++) _flyers[i].enabled = false;
+                if (_hideFlyers != null) _hideFlyers();
             }
 
             _isAnimating = false;
@@ -377,8 +390,9 @@ namespace BlastGame.View
                 else
                 {
                     // The Crate loses a layer: it shows the next look, shakes, and one plank falls off.
+                    // Each hit has its own look and shake, so two hits in one tap show one after the other.
                     _looks.Add(new Look { Pos = p, Cell = hit.After, Start = t });
-                    SetStep(p, TileAnim.Shake, t, HitShake);
+                    _fx.Add(new Fx { Kind = FxKind.TileShake, Start = t, Duration = HitShake, Size = HitShakeAmount, Cell = p });
                     AddPlanks(at, t, 1);
                 }
                 end = Mathf.Max(end, t + ParticleLife);
@@ -502,21 +516,35 @@ namespace BlastGame.View
                 Vector3 from = CellPosition(m.To.X, m.To.Y) + new Vector3(0f, -0.35f, 0f);
                 SpriteRenderer sr = _flyers[i];
                 Color c = sr.color;
+                Vector3 pos;
+                float size;
                 if (target.HasValue)
                 {
                     // An arc up to the icon, shrinking to icon size.
-                    Vector3 pos = Vector3.Lerp(from, target.Value, e);
+                    pos = Vector3.Lerp(from, target.Value, e);
                     pos.x += Mathf.Sin(Mathf.PI * e) * 0.6f;
-                    sr.transform.localPosition = pos;
-                    SetScale(sr.transform, TileSize * Mathf.Lerp(1f, 0.55f, e));
+                    size = TileSize * Mathf.Lerp(1f, 0.55f, e);
                     c.a = k < 0.85f ? 1f : 1f - (k - 0.85f) / 0.15f;
                 }
                 else
                 {
-                    sr.transform.localPosition = from + new Vector3(0f, -0.5f * e, 0f);
+                    pos = from + new Vector3(0f, -0.5f * e, 0f);
+                    size = TileSize;
                     c.a = 1f - e;
                 }
-                sr.color = c;
+
+                if (_showFlyer != null)
+                {
+                    // Drawn on the HUD, so it stays visible over the bar.
+                    sr.enabled = false;
+                    _showFlyer(i, sr.sprite, c, pos, size);
+                }
+                else
+                {
+                    sr.transform.localPosition = pos;
+                    SetScale(sr.transform, size);
+                    sr.color = c;
+                }
             }
         }
 
@@ -832,7 +860,7 @@ namespace BlastGame.View
             for (int i = 0; i < _looks.Count; i++)
             {
                 Look look = _looks[i];
-                if (t < look.Start) continue;
+                if (t < look.Start || IsReplaced(i, t)) continue;
                 if (_shown[look.Pos.X, look.Pos.Y] != look.Cell)
                     ShowCell(look.Pos.X, look.Pos.Y, look.Cell);
                 float k = Mathf.Clamp01((t - look.Start) / ConvertPop);
@@ -861,6 +889,21 @@ namespace BlastGame.View
             {
                 Fx fx = _fx[i];
                 float k = (t - fx.Start) / fx.Duration;
+                if (fx.Kind == FxKind.TileShake)
+                {
+                    // Side to side around its cell, dying out; the scale is left to the tile's look and step.
+                    if (k >= 0f && k < 1f)
+                    {
+                        float wobble = Mathf.Sin(k * Mathf.PI * 6f) * fx.Size * (1f - k);
+                        _tiles[fx.Cell.X, fx.Cell.Y].transform.localPosition =
+                            CellPosition(fx.Cell.X, fx.Cell.Y) + new Vector3(wobble, 0f, 0f);
+                    }
+                    else if (k >= 1f && k < 1.5f)
+                    {
+                        _tiles[fx.Cell.X, fx.Cell.Y].transform.localPosition = CellPosition(fx.Cell.X, fx.Cell.Y);
+                    }
+                    continue;
+                }
                 if (fx.Kind == FxKind.Shake)
                 {
                     if (k >= 0f && k < 1f)
@@ -874,6 +917,20 @@ namespace BlastGame.View
                 if (fx.Renderer.enabled) ApplyFx(fx, k, t);
             }
             transform.localPosition = shake;
+        }
+
+        /// <summary>True when a later look for the same cell has also started: only the newest one applies.</summary>
+        private bool IsReplaced(int index, float t)
+        {
+            Look look = _looks[index];
+            for (int j = 0; j < _looks.Count; j++)
+            {
+                if (j == index || _looks[j].Pos != look.Pos) continue;
+                float other = _looks[j].Start;
+                if (other <= t && (other > look.Start || (other == look.Start && j > index)))
+                    return true;
+            }
+            return false;
         }
 
         private void ApplyTile(int x, int y, TileStep step, float t)
@@ -909,11 +966,6 @@ namespace BlastGame.View
                     else if (k < 0.8f) size = 1f;
                     else size = 1f - EaseIn((k - 0.8f) / 0.2f);
                     SetScale(tile, TileSize * size);
-                    break;
-                case TileAnim.Shake:
-                    // Side to side around its cell, dying out; the scale is left to its look.
-                    float wobble = k >= 1f ? 0f : Mathf.Sin(k * Mathf.PI * 6f) * HitShakeAmount * (1f - k);
-                    tile.localPosition = CellPosition(x, y) + new Vector3(wobble, 0f, 0f);
                     break;
                 case TileAnim.MergeCenter:
                     // Swells while the others land on it, then gives way to the combo.

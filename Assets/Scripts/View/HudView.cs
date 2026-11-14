@@ -50,6 +50,8 @@ namespace BlastGame.View
         private Action _onButton;
         private Action _onLevels;
         private GameObject _levelSelect;
+        private Canvas _canvas;
+        private readonly List<Image> _flyers = new List<Image>(); // items flying to a goal icon, reused
 
         public bool IsResultVisible
         {
@@ -77,6 +79,7 @@ namespace BlastGame.View
             }
 
             var canvas = gameObject.AddComponent<Canvas>();
+            _canvas = canvas;
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             var scaler = gameObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -226,6 +229,34 @@ namespace BlastGame.View
         public void HideResult()
         {
             _resultPanel.SetActive(false);
+        }
+
+        /// <summary>
+        /// Shows flying item number index (made on first use) at a screen point, sizePixels wide, over everything.
+        /// The board camera cannot draw over the bar, so the board hands such flights to the HUD.
+        /// </summary>
+        public void ShowFlyer(int index, Sprite sprite, Color color, Vector2 screen, float sizePixels)
+        {
+            while (_flyers.Count <= index)
+            {
+                Image image = NewImage("Flyer", transform, Color.white);
+                image.preserveAspect = true;
+                image.gameObject.SetActive(false);
+                _flyers.Add(image);
+            }
+            Image flyer = _flyers[index];
+            flyer.transform.SetAsLastSibling();
+            flyer.sprite = sprite;
+            flyer.color = color;
+            float scale = _canvas.scaleFactor > 0f ? _canvas.scaleFactor : 1f;
+            flyer.rectTransform.sizeDelta = new Vector2(sizePixels, sizePixels) / scale;
+            flyer.rectTransform.position = new Vector3(screen.x, screen.y, 0f); // overlay canvas: world = screen
+            flyer.gameObject.SetActive(true);
+        }
+
+        public void HideFlyers()
+        {
+            for (int i = 0; i < _flyers.Count; i++) _flyers[i].gameObject.SetActive(false);
         }
 
         /// <summary>

@@ -74,3 +74,20 @@ Yalnız `Assets/Scripts/View/HudView.cs` ve `GameBootstrap.cs` değişti. Seçic
 - Bu akışı seçici yerine sonraki levele gidecek şekilde bıraktım, çünkü mevcut akış buydu. Seçiciye her an bar düğmesiyle dönülebilir.
 - Level ve hamle yazıları, düğmeye yer açmak için biraz sağa kaydı.
 - Sonsuz oyun bayrağı (kapalı) seçiciyle de çalışır: o modda "Next board" düğmesi de görünür.
+
+## Aşama B ek: kontrol düzeltmeleri
+
+Yalnız `Assets/Scripts/View/` (`GridView`, `HudView`, `GameBootstrap`) değişti.
+
+**Gemini 7, aynı Sandığa iki vuruş:**
+- Sarsıntı artık her vuruş için ayrı bir zaman çizelgesi etkisi (`FxKind.TileShake`). Hücrenin tek `_steps` kaydını kullanmadığı için iki vuruş iki sarsıntı ve iki tahta düşüşü olarak sırayla oynar.
+- `_looks`'ta aynı hücrenin birden çok kaydı varsa her karede yalnız başlamış en yeni kayıt uygulanır (`IsReplaced`). Böylece eski ve yeni kat aynı karede üst üste uygulanmaz.
+- Kırılma (son vuruş) eskisi gibi küçülme adımıyla biter; son hal yine grid'den gelir.
+
+**Gemini 8, Çapanın HUD'a uçuşu:**
+- Dibe kayma tahta kamerasında kalır. Uçuş evresini HUD tuvali çizer: yeniden kullanılan `Image` nesneleri (`HudView.ShowFlyer`/`HideFlyers`), en üst katmanda.
+- `GameBootstrap` tahta konumunu `WorldToScreenPoint` ile ekran noktasına, boyutu ortografik ölçekle piksele çevirir.
+- Kamera rect'i sınırında kesilme kalmaz. HUD bağlanmamışsa tahta uçuşu eskisi gibi kendi çizer.
+- Pinyata, Sandık ve balon için uçuş eklenmedi.
+
+**Doğrulanmayan:** iki düzeltmenin görünüşü Editor'de ya da WebGL'de elle denenmedi.
