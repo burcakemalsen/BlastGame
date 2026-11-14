@@ -29,3 +29,9 @@
 **Doğrulayamadıklarım:** görüntü katmanı Editor'de çalıştırılmadı (yalnız derleme kontrolü); elle kontrol listesi 2-6 ürün sahibinde. Hata panelinin 44 punto sarmalı uzun mesajda gerçek ekranda kontrol edilmeli.
 
 **Öneri:** bozuk dosya için hata panelinde "Retry" yok; Backlog'a yazılabilir.
+
+## Kontrol sonrası
+
+- **Bulgu 1 (`HudView.cs`):** hedef öğesi 190→164 birim, simge 64→56, yazı 52→44, öğe içi kenar boşluğu 80→64, aralık 10→6. Üç hedef 3×164+2×6 = 504 birim; iPhone oranında kalan ~538'e sığar. İki ve tek hedefte sağa hizalı kalır, `Moves` alanına (%42'ye kadar) girmez. Gerçek ekranda görmedim; ürün sahibi kontrol listesinde bakmalı.
+- **Bulgu 2 (`LevelParser.cs`):** kökten sonra fazladan değer hatası artık `JsonReaderException(message, path, LineNumber, LinePosition, null)` ile kuruluyor; Newtonsoft mesaja satır/konumu ekler ve `InnerException` olarak saklanır. Mesajı çalıştırıp görmedim, kütüphanenin bu kurucu davranışına dayanıyorum.
+- `dotnet test`: `Başarılı! - Başarısız: 0, Başarılı: 766, Toplam: 766`. `unity-check`: `Unity compile check: clean.` (0).

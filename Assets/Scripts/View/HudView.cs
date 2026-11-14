@@ -96,18 +96,18 @@ namespace BlastGame.View
             {
                 var item = new GameObject("Goal " + goal.Color, typeof(RectTransform));
                 item.transform.SetParent(_goalsRoot, false);
-                ((RectTransform)item.transform).sizeDelta = new Vector2(190f, 90f);
+                ((RectTransform)item.transform).sizeDelta = new Vector2(164f, 90f);
 
                 var swatch = NewImage("Swatch", item.transform, TileColors.ToColor(goal.Color));
                 swatch.rectTransform.anchorMin = new Vector2(0f, 0.5f);
                 swatch.rectTransform.anchorMax = new Vector2(0f, 0.5f);
                 swatch.rectTransform.pivot = new Vector2(0f, 0.5f);
-                swatch.rectTransform.sizeDelta = new Vector2(64f, 64f);
+                swatch.rectTransform.sizeDelta = new Vector2(56f, 56f);
 
-                var label = NewText("Count", item.transform, 52, TextAnchor.MiddleLeft);
+                var label = NewText("Count", item.transform, 44, TextAnchor.MiddleLeft);
                 label.rectTransform.anchorMin = new Vector2(0f, 0f);
                 label.rectTransform.anchorMax = new Vector2(1f, 1f);
-                label.rectTransform.offsetMin = new Vector2(80f, 0f);
+                label.rectTransform.offsetMin = new Vector2(64f, 0f);
                 label.rectTransform.offsetMax = Vector2.zero;
 
                 _goalItems.Add(new GoalItem { Color = goal.Color, Swatch = swatch, Label = label });
@@ -189,7 +189,7 @@ namespace BlastGame.View
             _goalsRoot.offsetMax = Vector2.zero;
             var layout = goals.AddComponent<HorizontalLayoutGroup>();
             layout.childAlignment = TextAnchor.MiddleRight;
-            layout.spacing = 10f;
+            layout.spacing = 6f;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
             layout.childForceExpandWidth = false;
