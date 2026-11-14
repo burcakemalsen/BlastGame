@@ -123,7 +123,7 @@ public static class TurnRules
 }
 ```
 
-`TurnResult` kurucusu `null` liste alırsa `ArgumentNullException`. Dosya başına bir tip: `CellMove.cs`, `GravityRules.cs`, `RefillRules.cs`, `TurnResult.cs`, `TurnRules.cs`. C# 9 sınırı: `record` ve `init` yok.
+`TurnResult` kurucusu `null` liste alırsa `ArgumentNullException`; kontrol parametre sırasıyla (`blasted`, `moves`, `filled`), hata ilk `null` parametrenin adını taşır. Listeler kopyalanmadan saklanır. Dosya başına bir tip: `CellMove.cs`, `GravityRules.cs`, `RefillRules.cs`, `TurnResult.cs`, `TurnRules.cs`. C# 9 sınırı: `record` ve `init` yok.
 
 ## Görüntü katmanı (`Assets/Scripts/View/`, namespace `BlastGame.View`)
 Otomatik test edilmez; kapısı elle kontrol listesi. Sahne dosyasına dokunulmaz; ayarlar (8x10, 5 renk, seed 42) aynen.
