@@ -121,6 +121,7 @@ public static class SpecialRules                                     // eklenen
 - `SpecialRules.Tap`'te boş hücre de "özel değil" sayılır → `ArgumentException`.
 - Katılımcı tek ise `SpecialRules.Tap`'in sonucu `Activate` ile birebir aynıdır (çekiliş yok).
 - Katılımcı bağı yalnız özel hücreler arasındadır; arada boş ya da renkli hücre bağı koparır.
+- `SpecialRules.Tap` hatalarında `ParamName`: `grid`, `random`, `x`, `y`. Kombo etkisinde `Created = Cell.Empty`. Zincirdeki tekli etkilerde `MergedCount = 1`, `Converted` boş. `GameSession`'da geçersiz yön çekilişinde grid, hamle ve hedefler değişmez. Geçersiz çekilişte kaynağın kaç kez çağrıldığı sözleşme değildir.
 
 **Sözleşme değişikliği notu:** Adım 6'da yan yana iki özel öğeden birine dokunmak tekli etkiydi; artık kombodur. `TurnRules`/`GameSession` düzeyinde yan yana özel öğe içeren mevcut testler (ör. Adım 6 Örnek 3: Bomb yanında Rocket) yeni davranışa göre güncellenir; testçi yapar (RULES, Onay). `SpecialRules.Activate` testleri değişmez.
 
