@@ -1,0 +1,11 @@
+{
+  "width": 9,
+  "height": 9,
+  "colors": 5,
+  "moves": 25,
+  "goals": [
+    { "color": "Green", "count": 15 },
+    { "color": "Yellow", "count": 15 },
+    { "color": "Purple", "count": 10 }
+  ]
+}

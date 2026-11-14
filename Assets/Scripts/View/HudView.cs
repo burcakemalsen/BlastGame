@@ -9,7 +9,7 @@ namespace BlastGame.View
 {
     /// <summary>
     /// Builds the on-screen UI in code (the scene file stays untouched): a top bar with moves left and
-    /// the goals, a small seed label in a corner, and a result panel with a "Play again" button.
+    /// the goals, a small seed label in a corner, and a result panel with one button (the caller says what it reads and does), and an error panel.
     /// It only shows numbers it is given; it owns no game rules.
     /// </summary>
     public sealed class HudView : MonoBehaviour
@@ -17,6 +17,8 @@ namespace BlastGame.View
         /// <summary>Share of the screen height (from the top) the bar takes; the board camera uses the rest.</summary>
         public const float BarFraction = 0.12f;
 
+        private const int ResultTitleSize = 100;
+        private const int ErrorTextSize = 44;
         private const float DoneAlpha = 0.35f;
         private static readonly Color TextColor = new Color(0.93f, 0.93f, 0.96f, 1f);
         private static readonly Color BarColor = new Color(0.12f, 0.12f, 0.18f, 1f);
@@ -29,22 +31,25 @@ namespace BlastGame.View
         }
 
         private Font _font;
+        private Text _levelText;
         private Text _movesText;
         private RectTransform _goalsRoot;
         private Text _seedText;
         private GameObject _resultPanel;
         private Text _resultTitle;
+        private Text _buttonLabel;
+        private GameObject _button;
         private readonly List<GoalItem> _goalItems = new List<GoalItem>();
-        private Action _onPlayAgain;
+        private Action _onButton;
 
         public bool IsResultVisible
         {
             get { return _resultPanel.activeSelf; }
         }
 
-        public void Build(Action onPlayAgain)
+        public void Build(Action onButton)
         {
-            _onPlayAgain = onPlayAgain;
+            _onButton = onButton;
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             if (EventSystem.current == null)
@@ -72,6 +77,12 @@ namespace BlastGame.View
         public void SetSeed(int seed)
         {
             _seedText.text = "Seed " + seed;
+        }
+
+        /// <summary>Shows the level number (1-based) in the bar.</summary>
+        public void SetLevel(int number)
+        {
+            _levelText.text = "Level " + number;
         }
 
         /// <summary>Replaces the goal items; call once per new session, not per tap.</summary>
@@ -123,9 +134,24 @@ namespace BlastGame.View
             }
         }
 
-        public void ShowResult(GameStatus status)
+        /// <summary>Opens the panel with a title and a button that runs the Build callback.</summary>
+        public void ShowResult(string title, string buttonText)
         {
-            _resultTitle.text = status == GameStatus.Won ? "You win!" : "Out of moves";
+            _resultTitle.text = title;
+            _resultTitle.fontSize = ResultTitleSize;
+            _resultTitle.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _buttonLabel.text = buttonText;
+            _button.SetActive(true);
+            _resultPanel.SetActive(true);
+        }
+
+        /// <summary>Opens the panel with a readable message and no button (the game cannot go on).</summary>
+        public void ShowError(string message)
+        {
+            _resultTitle.text = message;
+            _resultTitle.fontSize = ErrorTextSize;
+            _resultTitle.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _button.SetActive(false);
             _resultPanel.SetActive(true);
         }
 
@@ -142,9 +168,15 @@ namespace BlastGame.View
             bar.rectTransform.offsetMin = Vector2.zero;
             bar.rectTransform.offsetMax = Vector2.zero;
 
-            _movesText = NewText("Moves", bar.transform, 60, TextAnchor.MiddleLeft);
+            _levelText = NewText("Level", bar.transform, 40, TextAnchor.LowerLeft);
+            _levelText.rectTransform.anchorMin = new Vector2(0.03f, 0.55f);
+            _levelText.rectTransform.anchorMax = new Vector2(0.42f, 1f);
+            _levelText.rectTransform.offsetMin = Vector2.zero;
+            _levelText.rectTransform.offsetMax = Vector2.zero;
+
+            _movesText = NewText("Moves", bar.transform, 56, TextAnchor.UpperLeft);
             _movesText.rectTransform.anchorMin = new Vector2(0.03f, 0f);
-            _movesText.rectTransform.anchorMax = new Vector2(0.42f, 1f);
+            _movesText.rectTransform.anchorMax = new Vector2(0.42f, 0.55f);
             _movesText.rectTransform.offsetMin = Vector2.zero;
             _movesText.rectTransform.offsetMax = Vector2.zero;
 
@@ -184,14 +216,14 @@ namespace BlastGame.View
             dim.rectTransform.offsetMax = Vector2.zero;
             _resultPanel = dim.gameObject;
 
-            _resultTitle = NewText("Title", dim.transform, 100, TextAnchor.MiddleCenter);
-            _resultTitle.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-            _resultTitle.rectTransform.anchorMax = new Vector2(1f, 0.5f);
+            _resultTitle = NewText("Title", dim.transform, ResultTitleSize, TextAnchor.MiddleCenter);
+            _resultTitle.rectTransform.anchorMin = new Vector2(0.05f, 0.5f);
+            _resultTitle.rectTransform.anchorMax = new Vector2(0.95f, 0.5f);
             _resultTitle.rectTransform.pivot = new Vector2(0.5f, 0f);
             _resultTitle.rectTransform.sizeDelta = new Vector2(0f, 160f);
             _resultTitle.rectTransform.anchoredPosition = new Vector2(0f, 40f);
 
-            Image buttonImage = NewImage("PlayAgain", dim.transform, new Color(0.20f, 0.60f, 0.86f, 1f));
+            Image buttonImage = NewImage("ResultButton", dim.transform, new Color(0.20f, 0.60f, 0.86f, 1f));
             buttonImage.raycastTarget = true;
             buttonImage.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             buttonImage.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
@@ -200,10 +232,11 @@ namespace BlastGame.View
             buttonImage.rectTransform.anchoredPosition = new Vector2(0f, -20f);
             var button = buttonImage.gameObject.AddComponent<Button>();
             button.targetGraphic = buttonImage;
-            button.onClick.AddListener(OnPlayAgainClicked);
+            button.onClick.AddListener(OnButtonClicked);
+            _button = buttonImage.gameObject;
 
             Text label = NewText("Label", buttonImage.transform, 64, TextAnchor.MiddleCenter);
-            label.text = "Play again";
+            _buttonLabel = label;
             label.rectTransform.anchorMin = Vector2.zero;
             label.rectTransform.anchorMax = Vector2.one;
             label.rectTransform.offsetMin = Vector2.zero;
@@ -212,9 +245,9 @@ namespace BlastGame.View
             _resultPanel.SetActive(false);
         }
 
-        private void OnPlayAgainClicked()
+        private void OnButtonClicked()
         {
-            if (_onPlayAgain != null) _onPlayAgain();
+            if (_onButton != null) _onButton();
         }
 
         private Image NewImage(string name, Transform parent, Color color)

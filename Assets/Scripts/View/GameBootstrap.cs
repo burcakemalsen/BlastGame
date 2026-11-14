@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using BlastGame.Core;
 using UnityEngine;
 using Grid = BlastGame.Core.Grid; // UnityEngine.Grid also exists
@@ -12,16 +11,10 @@ namespace BlastGame.View
     /// </summary>
     public sealed class GameBootstrap : MonoBehaviour
     {
-        // Level settings (a file takes over in step 5).
-        private const int Width = 9;
-        private const int Height = 9;
-        private const int ColorCount = 4;
-        private const int Moves = 20;
-        private const TileColor FirstGoalColor = TileColor.Red;
-        private const int FirstGoalCount = 20;
-        private const TileColor SecondGoalColor = TileColor.Blue;
-        private const int SecondGoalCount = 20;
+        private const string LevelsFolder = "Levels";
 
+        private LevelData[] _levels; // null when loading failed; the error panel is up then
+        private int _levelIndex;
         private GameSession _session;
         private SeededRandom _random; // one source for the grid and every refill of this game
         private GridView _view;
@@ -51,25 +44,65 @@ namespace BlastGame.View
             _fitter = cam.gameObject.AddComponent<CameraFitter>();
 
             _hud = new GameObject("Hud").AddComponent<HudView>();
-            _hud.Build(StartGame);
+            _hud.Build(OnResultButton);
 
-            StartGame();
+            if (LoadLevels())
+                StartLevel(0);
         }
 
-        /// <summary>Starts a fresh game: new clock seed, new grid, new session; the old board is destroyed.</summary>
-        private void StartGame()
+        /// <summary>Reads every level file up front. On any problem shows the error panel and returns false.</summary>
+        private bool LoadLevels()
         {
+            TextAsset[] files = Resources.LoadAll<TextAsset>(LevelsFolder);
+            if (files.Length == 0)
+            {
+                ShowLoadError("No level files found.");
+                return false;
+            }
+
+            Array.Sort(files, (a, b) => string.CompareOrdinal(a.name, b.name));
+            var levels = new LevelData[files.Length];
+            for (int i = 0; i < files.Length; i++)
+            {
+                try
+                {
+                    levels[i] = LevelParser.Parse(files[i].text);
+                }
+                catch (LevelFormatException ex)
+                {
+                    ShowLoadError(files[i].name + ".json: " + ex.Message);
+                    return false;
+                }
+            }
+            _levels = levels;
+            return true;
+        }
+
+        private void ShowLoadError(string message)
+        {
+            Debug.LogError(message);
+            _hud.ShowError(message);
+        }
+
+        /// <summary>The panel button: next level after a win (or level 1 after the last), same level after a loss.</summary>
+        private void OnResultButton()
+        {
+            if (_session == null) return;
+            if (_session.Status == GameStatus.Won)
+                _levelIndex = (_levelIndex + 1) % _levels.Length;
+            StartLevel(_levelIndex);
+        }
+
+        /// <summary>Starts a level with a fresh clock seed, grid and session; the old board is destroyed.</summary>
+        private void StartLevel(int index)
+        {
+            _levelIndex = index;
             int seed = unchecked((int)DateTime.UtcNow.Ticks);
             Debug.Log("BlastGame seed: " + seed);
 
             _random = new SeededRandom(seed);
-            Grid grid = GridFactory.CreateRandom(Width, Height, ColorCount, _random);
-            var goals = new List<ColorGoal>
-            {
-                new ColorGoal(FirstGoalColor, FirstGoalCount),
-                new ColorGoal(SecondGoalColor, SecondGoalCount)
-            };
-            _session = new GameSession(grid, ColorCount, Moves, goals, _random);
+            _session = _levels[index].CreateSession(_random);
+            Grid grid = _session.Grid;
 
             if (_view != null) Destroy(_view.gameObject);
             _view = new GameObject("GridView").AddComponent<GridView>();
@@ -77,6 +110,7 @@ namespace BlastGame.View
             _fitter.Setup(_camera, grid.Width, grid.Height);
 
             _hud.SetSeed(seed);
+            _hud.SetLevel(index + 1);
             _hud.BuildGoals(_session);
             _hud.Refresh(_session);
             _hud.HideResult();
@@ -84,6 +118,8 @@ namespace BlastGame.View
 
         private void Update()
         {
+            if (_session == null) return; // loading failed: only the error panel shows
+
             // Touch first: Unity also emulates a mouse click from a touch, so the mouse is read only without touches.
             if (Input.touchCount > 0)
             {
@@ -100,7 +136,20 @@ namespace BlastGame.View
 
             // The result panel opens once the last turn has been shown.
             if (_session.Status != GameStatus.Playing && !_view.IsAnimating && !_hud.IsResultVisible)
-                _hud.ShowResult(_session.Status);
+                ShowResult();
+        }
+
+        private void ShowResult()
+        {
+            if (_session.Status == GameStatus.Won)
+            {
+                bool last = _levelIndex == _levels.Length - 1;
+                _hud.ShowResult(last ? "All levels done!" : "You win!", last ? "Play again" : "Next level");
+            }
+            else
+            {
+                _hud.ShowResult("Out of moves", "Try again");
+            }
         }
 
         private void HandleTap(Vector2 screenPos)
