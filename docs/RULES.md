@@ -52,6 +52,7 @@ Bağlam, bir oturumun aklında tutabildiği konuşma miktarıdır. Dolunca özet
 ## Testçi
 - Yazdığı yer: `tests/Core.Tests/`.
 - Amacı kodu kırmaktır, geçirmek değil. Her spec maddesi için: normal durum, sınır değerleri (0, 1, en büyük boyut, köşe, kenar), geçersiz girdi.
+- **Ölçü (kota için):** Bir test bir davranış sınıfını sınar; aynı sınıfı tekrar eden test yazılmaz (örnek: dört köşenin her biri ayrı sınıftır, aynı köşeyi altı renkle denemek değildir). `Theory` satırları da test sayılır. Yeni test için kaba üst sınır: basit adımda ~80, zor adımda ~150. Aşılırsa raporda neden gerektiği yazılır. Yeterliliği sayı değil, kontrolcünün bilerek bozma denemesi ölçer: yakalanmayan bozma için test eklenir.
 - Yalnız spec'i ve stub imzalarını okur; uygulama kodunu okumaz, yazmaz.
 - Spec'in söylemediği davranışı tahmin etmez; belirsizliği raporlar.
 - Hata bekleyen testte hata türünü tam belirtir (`Assert.Throws<ArgumentException>` gibi). Genel `Exception` beklemez; yoksa stub'ın "henüz yazılmadı" hatası testi yanlışlıkla geçirir.
