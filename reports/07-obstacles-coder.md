@@ -61,3 +61,16 @@ Eski bir test (`Parse_BadGoals_MessageContainsGoalPath`, `[ { "count": 5 } ]`) m
 ### Öneriler
 - Elle deneme için geçici bir level seçici, ya da deneme levellerini başa alan bir bayrak (Backlog).
 - Kökte `AGENTS.md` adlı izlenmeyen bir dosya var; benim değil, dokunmadım.
+
+## Aşama B ek: level seçici
+
+Yalnız `Assets/Scripts/View/HudView.cs` ve `GameBootstrap.cs` değişti. Seçici, öteki arayüz gibi kodla kurulur; sahne dosyasına dokunulmadı.
+- Oyun level seçiciyle açılır. Her level numaralı bir düğmedir (4 sütun, kilit yok); dokunulan level açılır.
+- Üst barın solunda "Levels" düğmesi var; oyun sırasında seçiciye döndürür. Tahta, yeni bir seçim yapılana kadar arkada kalır. Seçici açıkken tahta dokunuş almaz ve kazan/kaybet paneli açılmaz.
+- Kazan/kaybet akışı aynen kaldı:
+  - Kazanınca "Next level" sonraki leveli açar.
+  - Son level kazanılınca "All levels done!" / "Play again" level 1'i açar.
+  - Kaybedince "Try again" aynı leveli yeniden başlatır.
+- Bu akışı seçici yerine sonraki levele gidecek şekilde bıraktım, çünkü mevcut akış buydu. Seçiciye her an bar düğmesiyle dönülebilir.
+- Level ve hamle yazıları, düğmeye yer açmak için biraz sağa kaydı.
+- Sonsuz oyun bayrağı (kapalı) seçiciyle de çalışır: o modda "Next board" düğmesi de görünür.

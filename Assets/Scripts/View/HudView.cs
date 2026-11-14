@@ -11,6 +11,7 @@ namespace BlastGame.View
     /// Builds the on-screen UI in code (the scene file stays untouched): a top bar with moves left and
     /// the goals (color swatches, then obstacle icons), a small seed label in a corner, and a result panel with one button (the caller says what it reads and does), and an error panel.
     /// In endless mode the moves and goals are hidden (their code stays) and a "Next board" button shows instead.
+    /// A level select panel lists every level (no locks); a "Levels" button in the bar opens it during play.
     /// It only shows numbers it is given; it owns no game rules.
     /// </summary>
     public sealed class HudView : MonoBehaviour
@@ -47,16 +48,25 @@ namespace BlastGame.View
         private Action _onNextBoard;
         private readonly List<GoalItem> _goalItems = new List<GoalItem>();
         private Action _onButton;
+        private Action _onLevels;
+        private GameObject _levelSelect;
 
         public bool IsResultVisible
         {
             get { return _resultPanel.activeSelf; }
         }
 
-        public void Build(Action onButton, Action onNextBoard)
+        public bool IsLevelSelectVisible
+        {
+            get { return _levelSelect != null && _levelSelect.activeSelf; }
+        }
+
+        /// <summary>onLevels runs when the bar's "Levels" button is pressed.</summary>
+        public void Build(Action onButton, Action onNextBoard, Action onLevels)
         {
             _onButton = onButton;
             _onNextBoard = onNextBoard;
+            _onLevels = onLevels;
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             if (EventSystem.current == null)
@@ -218,6 +228,80 @@ namespace BlastGame.View
             _resultPanel.SetActive(false);
         }
 
+        /// <summary>
+        /// Builds the level select panel once: a button per level, numbered from 1; a press runs onPick with the
+        /// 0-based index. Every level is open. The panel starts hidden.
+        /// </summary>
+        public void BuildLevelSelect(int levelCount, Action<int> onPick)
+        {
+            if (_levelSelect != null) Destroy(_levelSelect);
+
+            Image panel = NewImage("LevelSelect", transform, new Color(0.10f, 0.10f, 0.15f, 1f));
+            panel.raycastTarget = true; // the board behind takes no taps
+            panel.rectTransform.anchorMin = Vector2.zero;
+            panel.rectTransform.anchorMax = Vector2.one;
+            panel.rectTransform.offsetMin = Vector2.zero;
+            panel.rectTransform.offsetMax = Vector2.zero;
+            _levelSelect = panel.gameObject;
+
+            Text title = NewText("Title", panel.transform, 96, TextAnchor.MiddleCenter);
+            title.text = "Levels";
+            title.rectTransform.anchorMin = new Vector2(0f, 0.80f);
+            title.rectTransform.anchorMax = new Vector2(1f, 0.92f);
+            title.rectTransform.offsetMin = Vector2.zero;
+            title.rectTransform.offsetMax = Vector2.zero;
+
+            var grid = new GameObject("Grid", typeof(RectTransform));
+            grid.transform.SetParent(panel.transform, false);
+            var gridRect = (RectTransform)grid.transform;
+            gridRect.anchorMin = new Vector2(0.08f, 0.10f);
+            gridRect.anchorMax = new Vector2(0.92f, 0.78f);
+            gridRect.offsetMin = Vector2.zero;
+            gridRect.offsetMax = Vector2.zero;
+            var layout = grid.AddComponent<GridLayoutGroup>();
+            layout.cellSize = new Vector2(200f, 200f);
+            layout.spacing = new Vector2(36f, 36f);
+            layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            layout.startAxis = GridLayoutGroup.Axis.Horizontal;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            layout.constraintCount = 4;
+
+            for (int i = 0; i < levelCount; i++)
+            {
+                int index = i; // captured per button
+                Button button = NewButton("Level " + (i + 1), grid.transform, (i + 1).ToString(), 80);
+                button.onClick.AddListener(() => onPick(index));
+            }
+
+            _levelSelect.SetActive(false);
+        }
+
+        public void ShowLevelSelect()
+        {
+            if (_levelSelect != null) _levelSelect.SetActive(true);
+        }
+
+        public void HideLevelSelect()
+        {
+            if (_levelSelect != null) _levelSelect.SetActive(false);
+        }
+
+        private Button NewButton(string name, Transform parent, string text, int textSize)
+        {
+            Image image = NewImage(name, parent, new Color(0.20f, 0.60f, 0.86f, 1f));
+            image.raycastTarget = true;
+            var button = image.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            Text label = NewText("Label", image.transform, textSize, TextAnchor.MiddleCenter);
+            label.text = text;
+            label.rectTransform.anchorMin = Vector2.zero;
+            label.rectTransform.anchorMax = Vector2.one;
+            label.rectTransform.offsetMin = Vector2.zero;
+            label.rectTransform.offsetMax = Vector2.zero;
+            return button;
+        }
+
         private void BuildBar()
         {
             Image bar = NewImage("TopBar", transform, BarColor);
@@ -226,14 +310,23 @@ namespace BlastGame.View
             bar.rectTransform.offsetMin = Vector2.zero;
             bar.rectTransform.offsetMax = Vector2.zero;
 
+            Button levels = NewButton("LevelsButton", bar.transform, "Levels", 40);
+            var levelsRect = (RectTransform)levels.transform;
+            levelsRect.anchorMin = new Vector2(0f, 0.5f);
+            levelsRect.anchorMax = new Vector2(0f, 0.5f);
+            levelsRect.pivot = new Vector2(0f, 0.5f);
+            levelsRect.sizeDelta = new Vector2(170f, 100f);
+            levelsRect.anchoredPosition = new Vector2(20f, 0f);
+            levels.onClick.AddListener(OnLevelsClicked);
+
             _levelText = NewText("Level", bar.transform, 40, TextAnchor.LowerLeft);
-            _levelText.rectTransform.anchorMin = new Vector2(0.03f, 0.55f);
+            _levelText.rectTransform.anchorMin = new Vector2(0.20f, 0.55f);
             _levelText.rectTransform.anchorMax = new Vector2(0.42f, 1f);
             _levelText.rectTransform.offsetMin = Vector2.zero;
             _levelText.rectTransform.offsetMax = Vector2.zero;
 
             _movesText = NewText("Moves", bar.transform, 56, TextAnchor.UpperLeft);
-            _movesText.rectTransform.anchorMin = new Vector2(0.03f, 0f);
+            _movesText.rectTransform.anchorMin = new Vector2(0.20f, 0f);
             _movesText.rectTransform.anchorMax = new Vector2(0.42f, 0.55f);
             _movesText.rectTransform.offsetMin = Vector2.zero;
             _movesText.rectTransform.offsetMax = Vector2.zero;
@@ -325,6 +418,11 @@ namespace BlastGame.View
         private void OnButtonClicked()
         {
             if (_onButton != null) _onButton();
+        }
+
+        private void OnLevelsClicked()
+        {
+            if (_onLevels != null) _onLevels();
         }
 
         private void OnNextBoardClicked()
