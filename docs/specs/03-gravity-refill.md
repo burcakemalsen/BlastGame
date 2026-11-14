@@ -64,7 +64,7 @@ y=2  B G G
 y=1  R R G
 y=0  B R B
 ```
-`Tap(1, 0)` → `Blasted`: `(1,0), (0,1), (1,1)`. `Collapse`: sütun 0'da `B(0,2)` → `(0,1)`; sütun 1'de `G(1,2)` → `(1,0)`. `Moves`: `(0,2)→(0,1), (1,2)→(1,0)`. Boşlar `(0,2), (1,1), (1,2)` → hepsi `B`. Sonuç:
+`Tap(1, 0)` → `Blasted`: `(1,0), (0,1), (1,1)`. `Collapse`: sütun 0'da `B(0,2)` → `(0,1)`; sütun 1'de `G(1,2)` → `(1,0)`. `Moves`: `(0,2)→(0,1), (1,2)→(1,0)`. Boşlar Fill sırasıyla `(1,1), (0,2), (1,2)` → hepsi `B`; `Filled` bu liste. Sonuç:
 ```
 y=2  B B G
 y=1  B B G
