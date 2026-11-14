@@ -9,6 +9,7 @@ namespace BlastGame.Core
         private readonly IReadOnlyList<CellPos> _blasted;
         private readonly IReadOnlyList<CellMove> _moves;
         private readonly IReadOnlyList<CellPos> _filled;
+        private readonly IReadOnlyList<TurnEffect> _effects;
 
         /// <summary>Stores the given lists as they are (no copy).</summary>
         public TurnResult(IReadOnlyList<CellPos> blasted, IReadOnlyList<CellMove> moves, IReadOnlyList<CellPos> filled)
@@ -23,6 +24,14 @@ namespace BlastGame.Core
             _blasted = blasted;
             _moves = moves;
             _filled = filled;
+            _effects = Array.Empty<TurnEffect>();
+        }
+
+        /// <summary>Stores the given lists as they are (no copy).</summary>
+        public TurnResult(IReadOnlyList<CellPos> blasted, IReadOnlyList<CellMove> moves, IReadOnlyList<CellPos> filled,
+                          IReadOnlyList<TurnEffect> effects)
+        {
+            throw new NotImplementedException();
         }
 
         public IReadOnlyList<CellPos> Blasted
@@ -38,6 +47,12 @@ namespace BlastGame.Core
         public IReadOnlyList<CellPos> Filled
         {
             get { return _filled; }
+        }
+
+        /// <summary>Effects in run (queue) order; empty when nothing was blasted.</summary>
+        public IReadOnlyList<TurnEffect> Effects
+        {
+            get { return _effects; }
         }
 
         /// <summary>True when Blasted.Count > 0.</summary>

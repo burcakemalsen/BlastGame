@@ -23,6 +23,16 @@ namespace BlastGame.Core
             return new Cell(CellKind.Color, color);
         }
 
+        public static Cell OfSpecial(SpecialKind kind)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Cell OfOrb(TileColor color)
+        {
+            throw new NotImplementedException();
+        }
+
         public CellKind Kind
         {
             get { return _kind; }
@@ -31,6 +41,21 @@ namespace BlastGame.Core
         public bool IsEmpty
         {
             get { return _kind == CellKind.Empty; }
+        }
+
+        public bool IsSpecial
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public SpecialKind Special
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public TileColor OrbColor
+        {
+            get { throw new NotImplementedException(); }
         }
 
         public TileColor Color
