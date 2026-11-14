@@ -16,8 +16,8 @@ namespace BlastGame.View
             {
                 for (int x = 0; x < grid.Width; x++)
                 {
-                    TileColor? color = grid.Get(x, y);
-                    if (color == null) continue;
+                    Cell cell = grid.Get(x, y);
+                    if (cell.IsEmpty) continue;
 
                     var tile = new GameObject("Tile " + x + "," + y);
                     tile.transform.SetParent(transform, false);
@@ -26,7 +26,7 @@ namespace BlastGame.View
 
                     var sr = tile.AddComponent<SpriteRenderer>();
                     sr.sprite = sprite;
-                    sr.color = TileColors.ToColor(color.Value);
+                    sr.color = TileColors.ToColor(cell.Color);
                 }
             }
         }
