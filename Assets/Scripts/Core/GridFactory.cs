@@ -28,7 +28,7 @@ namespace BlastGame.Core
                     if (value < 0 || value >= colorCount)
                         throw new InvalidOperationException(
                             "Random source returned " + value + ", expected 0.." + (colorCount - 1) + ".");
-                    grid.Set(x, y, (TileColor)value);
+                    grid.Set(x, y, Cell.OfColor((TileColor)value));
                 }
             }
             return grid;

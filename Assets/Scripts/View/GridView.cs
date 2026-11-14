@@ -9,16 +9,18 @@ namespace BlastGame.View
     {
         private const float TileSize = 0.9f;
 
+        private Grid _grid;
+        private SpriteRenderer[,] _tiles;
+
         public void Build(Grid grid)
         {
+            _grid = grid;
+            _tiles = new SpriteRenderer[grid.Width, grid.Height];
             Sprite sprite = CreateSquareSprite();
             for (int y = 0; y < grid.Height; y++)
             {
                 for (int x = 0; x < grid.Width; x++)
                 {
-                    TileColor? color = grid.Get(x, y);
-                    if (color == null) continue;
-
                     var tile = new GameObject("Tile " + x + "," + y);
                     tile.transform.SetParent(transform, false);
                     tile.transform.localPosition = new Vector3(x, y, 0f);
@@ -26,7 +28,23 @@ namespace BlastGame.View
 
                     var sr = tile.AddComponent<SpriteRenderer>();
                     sr.sprite = sprite;
-                    sr.color = TileColors.ToColor(color.Value);
+                    _tiles[x, y] = sr;
+                }
+            }
+            Refresh();
+        }
+
+        /// <summary>Syncs every tile with the grid: empty cells are hidden, colored ones show their color.</summary>
+        public void Refresh()
+        {
+            for (int y = 0; y < _grid.Height; y++)
+            {
+                for (int x = 0; x < _grid.Width; x++)
+                {
+                    Cell cell = _grid.Get(x, y);
+                    SpriteRenderer sr = _tiles[x, y];
+                    sr.enabled = !cell.IsEmpty;
+                    if (!cell.IsEmpty) sr.color = TileColors.ToColor(cell.Color);
                 }
             }
         }

@@ -8,7 +8,7 @@ namespace BlastGame.Core
         public const int MinSize = 1;
         public const int MaxSize = 16;
 
-        private readonly TileColor?[,] _cells;
+        private readonly Cell[,] _cells;
 
         public Grid(int width, int height)
         {
@@ -19,7 +19,7 @@ namespace BlastGame.Core
 
             Width = width;
             Height = height;
-            _cells = new TileColor?[width, height];
+            _cells = new Cell[width, height];
         }
 
         public int Width { get; }
@@ -31,19 +31,17 @@ namespace BlastGame.Core
             return x >= 0 && x < Width && y >= 0 && y < Height;
         }
 
-        /// <summary>Returns the cell color; null means the cell is empty.</summary>
-        public TileColor? Get(int x, int y)
+        /// <summary>Returns what the cell holds.</summary>
+        public Cell Get(int x, int y)
         {
             ThrowIfOutside(x, y);
             return _cells[x, y];
         }
 
-        public void Set(int x, int y, TileColor? color)
+        public void Set(int x, int y, Cell cell)
         {
             ThrowIfOutside(x, y);
-            if (color.HasValue && !Enum.IsDefined(typeof(TileColor), color.Value))
-                throw new ArgumentOutOfRangeException(nameof(color), "Undefined tile color: " + (int)color.Value + ".");
-            _cells[x, y] = color;
+            _cells[x, y] = cell;
         }
 
         private void ThrowIfOutside(int x, int y)
