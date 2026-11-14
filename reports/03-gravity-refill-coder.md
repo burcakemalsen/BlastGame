@@ -51,3 +51,8 @@ Sonuç: 1 ve 2 spec'te netleşti (`9e60302`), 3 test edilmiyor; yeni liste kald�
 - Editor'de ve iPhone'da görsel olarak denenmedi (maskenin kenarı, akıcılık, Ek A elle kontrol 1-5).
 - Dokunuş başına bir korutin nesnesi oluşur (geçici çöp, kalıcı nesne değil); spec'in "kalıcı nesne yok" şartını karşıladığını düşünüyorum.
 - Küçülme doğrusal; spec yalnız "küçülerek" diyor, ease belirtmiyor.
+
+## Aşama C ek: 9x9
+
+- `View/GameBootstrap.cs`: `Width` 8 → 9, `Height` 10 → 9; kamera, maske ve animasyon boyutu grid'den okuduğu için başka değişiklik gerekmedi.
+- `dotnet test` → `Başarısız: 0, Başarılı: 598, Toplam: 598`; `unity-check` → `Unity compile check: clean.`, çıkış 0.

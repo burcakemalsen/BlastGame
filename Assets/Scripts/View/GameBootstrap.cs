@@ -10,8 +10,8 @@ namespace BlastGame.View
     /// </summary>
     public sealed class GameBootstrap : MonoBehaviour
     {
-        private const int Width = 8;
-        private const int Height = 10;
+        private const int Width = 9;
+        private const int Height = 9;
         private const int ColorCount = 5;
         private const int Seed = 42;
 
