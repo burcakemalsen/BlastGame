@@ -594,7 +594,8 @@ namespace BlastGame.Core.Tests
             GameSession session = Finished(won, random);
             string[] gridBefore = TestGrid.Dump(session.Grid);
             int callsBefore = random.Calls;
-            int remainingRed = session.Remaining(TileColor.Red);
+            TileColor goalColor = won ? TileColor.Red : TileColor.Blue;
+            int remainingGoal = session.Remaining(goalColor);
             GameStatus status = session.Status;
 
             for (int i = 0; i < 3; i++)
@@ -606,7 +607,7 @@ namespace BlastGame.Core.Tests
             Assert.Equal(gridBefore, TestGrid.Dump(session.Grid));
             Assert.Equal(callsBefore, random.Calls);
             Assert.Equal(0, session.MovesLeft);
-            Assert.Equal(remainingRed, session.Remaining(TileColor.Red));
+            Assert.Equal(remainingGoal, session.Remaining(goalColor));
             Assert.Equal(status, session.Status);
         }
 

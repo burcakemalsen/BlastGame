@@ -40,3 +40,6 @@ Not: `ColorGoal` stub'ı kurucuda `NotImplementedException` atıyor ve `GameSess
 
 ## Ek
 `Ctor_DefaultGoalWithCountZero_ThrowsArgumentExceptionExactType` eklendi (belirsizlik 2, spec ca46110): `default(ColorGoal)` hedefi -> `ArgumentException` tam tür, `ParamName` "goals", kaynak çağrılmaz, grid değişmez. `dotnet test`: Başarısız: 83, Başarılı: 598, Toplam: 681 (yeni testler kırmızı, eskiler yeşil). Yeni test sayısı 83.
+
+## Ek 2
+`Tap_AfterGameOver_ChangesNothingAndSkipsSource` düzeltildi: `Remaining` artık oturumun gerçek hedef rengiyle çağrılıyor (`won ? Red : Blue`); önceki hali Lost oturumunda hedef olmayan Red için `ArgumentException` alıyordu. `dotnet test`: Başarılı! - Başarısız: 0, Başarılı: 681, Toplam: 681.
