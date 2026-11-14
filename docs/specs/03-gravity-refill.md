@@ -150,3 +150,25 @@ Otomatik test edilmez; kapısı elle kontrol listesi. Sahne dosyasına dokunulma
 5. Kontrolcüler paralel: Claude (Sonnet 5.5, bilerek bozma) ve Gemini (`agy`; önce hata çıktısı görünür şekilde denenir, çalışmazsa atlanır ve rapora yazılır). Bulgular kapanır.
 6. WebGL önizlemesi `gh-pages`'e; ürün sahibi Editor'de ve iPhone'da dener.
 7. Tarama, push, PR, CI yeşil, merge.
+
+## Ek A: düşme animasyonu (onaylandı, 2026-11-14)
+Ürün sahibinin elle denemesinden sonra eklendi: kareler anında yerine geçince düşme görünmüyor. Animasyon Adım 9'dan bu adıma alınır; yalnız görüntü katmanı değişir, kural katmanı ve testler değişmez. Yukarıdaki "Animasyon yok" satırlarının yerine bu bölüm geçer. Hedef, türün yaygın hissi: patlayan kareler kısa bir "pıt" ile kaybolur, üsttekiler hızlanarak düşer, yeni kareler grid'in üstünden gelir.
+
+### Davranış
+- **Kaynak:** animasyon yalnız `TurnRules.Tap`'in döndürdüğü `TurnResult`'tan çizilir. Grid dokunuştan hemen sonra son halindedir; görüntü yalnız oraya nasıl gidildiğini gösterir, kural koymaz ve grid'in kopyasını tutmaz.
+- **Patlama:** `Blasted` hücrelerindeki kareler kısa sürede (~0.12 sn) küçülerek kaybolur.
+- **Düşme:** patlama bitince `Moves`'taki her kare `From`'dan `To`'ya düşer. `Filled`'daki her yeni kare, kendi sütununda grid'in üst kenarının üstünden başlar (sütunda kaçıncı yeni kareyse o kadar yukarıdan; sıraları korunur) ve hücresine düşer.
+- **Hareket:** her kare sabit sürede (~0.35 sn) hızlanarak düşer (kübik ease-in: yavaş başlar, sonda hızlı); uzaklık süreyi değiştirmez. Bütün kareler aynı anda başlar. İnişte sekme yok (ileride istenirse Backlog). Süreler `GridView`'de adlandırılmış sabitlerdir, ürün sahibi oynayarak ayarlar. Tween kütüphanesi eklenmez; ease formülü kodda yazılır.
+- **Maske:** grid'in üstünden gelen kareler grid alanının dışında görünmez (grid alanını kaplayan bir maske).
+- **Girdi:** animasyon sürerken dokunuşlar yok sayılır; animasyon bitince girdi açılır. (Türde düşerken dokunmak da yaygın; bu, kural katmanında düşmenin adım adım ilerlemesini gerektirir. Backlog'a yazılır.)
+- **Nesne:** animasyon her hücre için mevcut kare nesnesini kullanır (renk son haline ayarlanır, başlangıç konumuna alınıp hücresine kaydırılır); dokunuş başına yeni doku ya da kalıcı nesne oluşturulmaz. Unity'nin yerleşik özellikleri dışında paket eklenmez.
+
+### Elle kontrol (Ek A)
+1. Patlayan grup kısa bir küçülmeyle kaybolur; üstündeki kareler hızlanarak düşer.
+2. Yeni kareler grid'in üstünden süzülerek girer; grid alanının dışında görünmez.
+3. Animasyon sırasında dokunmak hiçbir şey yapmaz, hata vermez; bittikten sonra dokunuş çalışır.
+4. Animasyon bittiğinde görüntü, animasyonsuz sürümdeki son grid'le aynıdır (aynı seed, aynı dokunuş sırası).
+5. `unity-check` 0; WebGL iPhone Safari'de akıcı (gözle takılma yok).
+
+### Akış (Ek A)
+Kodcu (Opus 5.5) yalnız `Assets/Scripts/View/` → `feat(view): animate blast and fall`. Testler değişmez, `dotnet test` yeşil kalır. Kontrol kapısı: görüntü katmanı otomatik test edilmediği için bilerek bozma yok; ürün sahibinin oynaması kapıdır. WebGL yeniden yayımlanır.
