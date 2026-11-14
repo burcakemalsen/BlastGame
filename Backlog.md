@@ -7,3 +7,4 @@ Ideas that are out of scope for the current step. Add new ideas here instead of 
 - `BlastRules.Blast` returns the `List<CellPos>` from `GroupFinder` as `IReadOnlyList`; a caller could cast and mutate it. Wrap it read-only if results start being shared. Source: step 2 review.
 - Tapping while tiles are still falling (common in the genre): needs gravity to advance step by step in the rules layer instead of one-shot `TurnRules.Tap`. Source: step 3 animation addendum.
 - Small landing bounce for falling tiles. Source: step 3 animation addendum.
+- `TurnRules.Tap` no longer calls `BlastRules.Blast` (it needs the group size and color first, so it calls `GroupFinder` directly). Remove `BlastRules.Blast` or route `TurnRules` back through it. Source: step 6 review.
