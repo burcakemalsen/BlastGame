@@ -36,6 +36,7 @@ Bağlam, bir oturumun aklında tutabildiği konuşma miktarıdır. Dolunca özet
 ## Orchestrator
 - Beyindir: spec yazar, görev tarifi yazar, ajanları başlatır, raporlarını ve diff'i okur, beğenmediğini gerekçesiyle geri yollar, ürün sahibine kodu anlatır, durumu kaydeder, push öncesi taramayı ve push'u yapar.
 - Oyun kodu, stub, test ve kurulum dosyası yazmaz; hepsini ilgili ajana yaptırır, sonra kontrol eder.
+- **Kodu yeniden okumaz (karar, 2026-11-14):** ajanın yazdığı kodun gövdesini okuyup yeniden doğrulamaz; ucuz ajanın amacı kotayı azaltmaktır. Raporları okur ve ucuz kontrolleri yapar: stub imzaları sözleşmeye uyuyor mu, testleri kendisi çalıştırır, `git status`/`git diff --stat` ile ajanın kendi alanında kaldığını görür. Kodun spec'e uyumunu kontrolcü (Opus 5.5 medium) denetler.
 - **Bakım alt ajanı:** adım kapısına girmeyen bakım işini (script, CI, proje ayarı, paket listesi) alt ajana yaptırabilir; ajan türünü kendi seçer. Alt ajan bu dosyayı okumaz: görev tarifi kendi içinde tamdır (dokunacağı dosyalar, "bitti"nin tanımı, uyması gereken kural) ve iş sonunda kısa rapor verir. Oyun kodu ve testler bu yolla yazılmaz; onlar kodcunun ve testçinin işidir.
 - Ürün sahibi her dosyayı okuyup açıklayabilmek istiyor: yeni terimi kullanmadan önce bir cümleyle, sade bir benzetmeyle açıkla.
 
