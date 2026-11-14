@@ -57,3 +57,23 @@ Toplam yeni test 178. Mevcut 1028 testin hepsi yeşil, mevcut testlere dokunulma
 Başarısız! - Başarısız:   170, Başarılı:  1036, Atlanan:     0, Toplam:  1206
 ```
 Ek'teki 9 test kırmızı. Stub'la geçen yeni testler yine aynı 8 test.
+
+## Ek 2: kontrol bulguları
+Uygulama kodunu okumadım. Testleri yalnız spec'e ve iki kontrol raporundaki bulgu tanımlarına göre yazdım. 11 yeni test:
+- **Denetim sırası** (`Parse_TwoErrors_FirstInCheckOrderIsReported`, 3 yeni satır):
+  - aynı hücreye Pinyata, sonra `y = 0`'da Çapa → yol `'obstacles[1].y'`, mesajda `'obstacles[1]'` yok (Claude S8);
+  - engel hedefi tekrarı ve `count 0` birlikte → `'goals[1].obstacle'`;
+  - `color` ve `obstacle` birlikte, `count 0` → `'goals[0]'`.
+- **Negatif koordinat:** parser'da `x = -1` ve `y = -1` (2 satır), `LevelData`'da `x = -1` ve `y = -1` (2 satır, `ArgumentException(obstacles)`).
+- **Uçtan uca** (`ObstacleReviewFollowUpTests.cs`): Çapa Sandığın üstünde, Sandık aynı dokunuşta kırılıyor, Çapa aynı turda dibe inip toplanıyor. `Hits`, `Collected`, `Moves`, iki hedefin sayımı ve kazanma kontrol ediliyor.
+- **Balon sayımı:** bir grupta iki balon ikisi de sayılıyor; `OrbOrb`'da tahtadaki bütün balonlar sayılıyor.
+- **Zincirde ikinci vuruş:** `OrbBomb`'dan dönüşen bomba, alanda önceden duran roketi tetikliyor; roket aynı Sandığa ikinci vuruşu ayrı patlama olarak yapıyor.
+
+**Sözleşme gereği güncellenen mevcut test** (tek değişiklik): `LevelParserTests.Parse_BadGoals_MessageContainsGoalPath`, satır `[ { "count": 5 } ]`. Beklenen yol `'goals[0].color'` yerine `'goals[0]'` oldu (netleştirme: `color` ve `obstacle` ikisi de yoksa yol `'goals[i]'`). Testin ölçtüğü şey aynı kaldı: mesajda alan yolunun geçmesi.
+
+**Test yazmadığım belirsizlik:** `LevelData`'ya `default(ObstaclePlacement)` verilirse (Pinyata, `(0,0)`, `Layers 0`) ne olmalı, spec söylemiyor. `LevelData` hataları yalnız "grid dışı, çakışma, y = 0'da Anchor" diye listeleniyor; kat denetimi `ObstaclePlacement` kurucusunda. Tahmin etmedim, karar ürün sahibinin.
+
+```
+Başarılı!  - Başarısız:     0, Başarılı:  1226, Atlanan:     0, Toplam:  1226
+```
+Yeni testlerin hepsi geçiyor, kod hatası adayı çıkmadı.

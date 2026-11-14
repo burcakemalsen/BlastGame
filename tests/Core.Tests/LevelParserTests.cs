@@ -170,7 +170,7 @@ namespace BlastGame.Core.Tests
         [InlineData(@"{}", "'goals'")]
         [InlineData(@"[]", "'goals'")]
         [InlineData(@"[5]", "'goals[0]'")]
-        [InlineData(@"[ { ""count"": 5 } ]", "'goals[0].color'")]
+        [InlineData(@"[ { ""count"": 5 } ]", "'goals[0]'")]
         [InlineData(@"[ { ""color"": 0, ""count"": 5 } ]", "'goals[0].color'")]
         [InlineData(@"[ { ""color"": ""red"", ""count"": 5 } ]", "'goals[0].color'")]
         [InlineData(@"[ { ""color"": ""Pink"", ""count"": 5 } ]", "'goals[0].color'")]

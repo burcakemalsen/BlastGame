@@ -97,6 +97,8 @@ namespace BlastGame.Core.Tests
         [InlineData(@"[ { ""type"": ""Pinata"", ""x"": 1.5, ""y"": 1 } ]", "'obstacles[0].x'")]
         [InlineData(@"[ { ""type"": ""Pinata"", ""x"": 4, ""y"": 1 } ]", "'obstacles[0].x'")]
         [InlineData(@"[ { ""type"": ""Pinata"", ""x"": 0, ""y"": 4 } ]", "'obstacles[0].y'")]
+        [InlineData(@"[ { ""type"": ""Pinata"", ""x"": -1, ""y"": 1 } ]", "'obstacles[0].x'")]
+        [InlineData(@"[ { ""type"": ""Pinata"", ""x"": 0, ""y"": -1 } ]", "'obstacles[0].y'")]
         [InlineData(@"[ { ""type"": ""Pinata"", ""x"": 0, ""y"": 1, ""layers"": 1 } ]", "'obstacles[0].layers'")]
         [InlineData(@"[ { ""type"": ""Crate"", ""x"": 0, ""y"": 1, ""layers"": 0 } ]", "'obstacles[0].layers'")]
         [InlineData(@"[ { ""type"": ""Crate"", ""x"": 0, ""y"": 1, ""layers"": 4 } ]", "'obstacles[0].layers'")]
@@ -155,6 +157,9 @@ namespace BlastGame.Core.Tests
         [InlineData("10", @"[ { ""type"": ""Pinata"", ""x"": 9, ""y"": 1 }, { ""type"": 3, ""x"": 0, ""y"": 1 } ]", RedGoal, "'obstacles[0].x'", "'obstacles[1]")]
         [InlineData("10", "[" + Pinata01 + "]", @"[ { ""z"": 1, ""color"": ""Red"", ""obstacle"": ""Pinata"", ""count"": 1 } ]", "'goals[0].z'", "'goals[0].count'")]
         [InlineData("10", "[" + Pinata01 + "]", @"[ { ""obstacle"": ""Rock"", ""count"": 0 } ]", "'goals[0].obstacle'", "'goals[0].count'")]
+        [InlineData("10", @"[ { ""type"": ""Pinata"", ""x"": 2, ""y"": 0 }, { ""type"": ""Anchor"", ""x"": 2, ""y"": 0 } ]", RedGoal, "'obstacles[1].y'", "'obstacles[1]'")]
+        [InlineData("10", "[" + Pinata01 + "]", @"[ { ""obstacle"": ""Pinata"", ""count"": 1 }, { ""obstacle"": ""Pinata"", ""count"": 0 } ]", "'goals[1].obstacle'", "'goals[1].count'")]
+        [InlineData("10", "[" + Pinata01 + "]", @"[ { ""color"": ""Red"", ""obstacle"": ""Pinata"", ""count"": 0 } ]", "'goals[0]'", "'goals[0].count'")]
         public void Parse_TwoErrors_FirstInCheckOrderIsReported(string moves, string obstacles, string goals,
             string expected, string notExpected)
         {

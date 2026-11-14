@@ -68,6 +68,8 @@ namespace BlastGame.Core.Tests
             new[] { Pl(ObstacleKind.Pinata, 0, 4) },
             new[] { Pl(ObstacleKind.Pinata, 1, 1), Pl(ObstacleKind.WaterBalloon, 1, 1) },
             new[] { Pl(ObstacleKind.Anchor, 2, 0) },
+            new[] { Pl(ObstacleKind.Pinata, -1, 1) },
+            new[] { Pl(ObstacleKind.Pinata, 1, -1) },
         };
 
         [Theory]
