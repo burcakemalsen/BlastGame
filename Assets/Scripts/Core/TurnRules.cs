@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BlastGame.Core
 {
-    /// <summary>One tap: blast, then collapse and refill if something blasted.</summary>
+    /// <summary>One tap: a group blast (maybe making a special item) or a special item chain, then collapse and refill.</summary>
     public static class TurnRules
     {
         public static TurnResult Tap(Grid grid, int x, int y, int colorCount, IRandomSource random)
@@ -20,13 +20,42 @@ namespace BlastGame.Core
             if (y < 0 || y >= grid.Height)
                 throw new ArgumentOutOfRangeException(nameof(y));
 
-            IReadOnlyList<CellPos> blasted = BlastRules.Blast(grid, x, y);
-            if (blasted.Count == 0)
-                return new TurnResult(blasted, new List<CellMove>(), new List<CellPos>());
+            Cell tapped = grid.Get(x, y);
+            IReadOnlyList<TurnEffect> effects;
+            if (tapped.IsSpecial)
+            {
+                effects = SpecialRules.Activate(grid, x, y);
+            }
+            else
+            {
+                IReadOnlyList<CellPos> group = GroupFinder.FindGroup(grid, x, y);
+                if (group.Count < BlastRules.MinGroupSize)
+                    return new TurnResult(new List<CellPos>(), new List<CellMove>(), new List<CellPos>());
 
+                // Draw the item (and a Rocket's direction) before the grid changes.
+                Cell created = SpecialRules.ForGroup(group.Count, tapped.Color, random);
+
+                var cleared = new List<ClearedCell>(group.Count);
+                foreach (CellPos p in group)
+                {
+                    cleared.Add(new ClearedCell(p, tapped));
+                    grid.Set(p.X, p.Y, Cell.Empty);
+                }
+                if (!created.IsEmpty)
+                    grid.Set(x, y, created);
+
+                effects = new[] { new TurnEffect(EffectKind.Group, new CellPos(x, y), cleared, created, -1) };
+            }
+
+            var blasted = new List<CellPos>();
+            foreach (TurnEffect effect in effects)
+                foreach (ClearedCell c in effect.Cleared)
+                    blasted.Add(c.Pos);
+
+            // Gravity once, then refill once, after every effect.
             IReadOnlyList<CellMove> moves = GravityRules.Collapse(grid);
             IReadOnlyList<CellPos> filled = RefillRules.Fill(grid, colorCount, random);
-            return new TurnResult(blasted, moves, filled);
+            return new TurnResult(blasted, moves, filled, effects);
         }
     }
 }

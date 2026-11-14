@@ -7,11 +7,18 @@ namespace BlastGame.View
 {
     /// <summary>
     /// Creates itself after the scene loads, starts a game from a clock seed and draws it.
-    /// Turns taps into GameSession.Tap calls; it owns no game rules.
+    /// Turns taps into rule calls (TurnRules.Tap in endless mode, GameSession.Tap otherwise); it owns no game rules.
     /// </summary>
     public sealed class GameBootstrap : MonoBehaviour
     {
         private const string LevelsFolder = "Levels";
+
+        /// <summary>
+        /// Endless play: moves, goals and win/lose are hidden and not applied; the board plays forever and
+        /// "Next board" opens the next level file. Set false to bring the level game back (its code stays).
+        /// static readonly, not const, so the unused branch does not warn.
+        /// </summary>
+        private static readonly bool EndlessMode = true;
 
         private LevelData[] _levels; // null when loading failed; the error panel is up then
         private int _levelIndex;
@@ -44,7 +51,8 @@ namespace BlastGame.View
             _fitter = cam.gameObject.AddComponent<CameraFitter>();
 
             _hud = new GameObject("Hud").AddComponent<HudView>();
-            _hud.Build(OnResultButton);
+            _hud.Build(OnResultButton, OnNextBoard);
+            _hud.SetEndless(EndlessMode);
 
             if (LoadLevels())
                 StartLevel(0);
@@ -93,6 +101,13 @@ namespace BlastGame.View
             StartLevel(_levelIndex);
         }
 
+        /// <summary>Endless mode: the next level file (the first after the last) with a new seed; not during an animation.</summary>
+        private void OnNextBoard()
+        {
+            if (_levels == null || _view == null || _view.IsAnimating) return;
+            StartLevel((_levelIndex + 1) % _levels.Length);
+        }
+
         /// <summary>Starts a level with a fresh clock seed, grid and session; the old board is destroyed.</summary>
         private void StartLevel(int index)
         {
@@ -134,8 +149,8 @@ namespace BlastGame.View
                 HandleTap(Input.mousePosition);
             }
 
-            // The result panel opens once the last turn has been shown.
-            if (_session.Status != GameStatus.Playing && !_view.IsAnimating && !_hud.IsResultVisible)
+            // The result panel opens once the last turn has been shown (never in endless mode).
+            if (!EndlessMode && _session.Status != GameStatus.Playing && !_view.IsAnimating && !_hud.IsResultVisible)
                 ShowResult();
         }
 
@@ -165,8 +180,18 @@ namespace BlastGame.View
             int y = Mathf.RoundToInt(world.y);
             if (!_session.Grid.IsInside(x, y)) return;
 
-            TurnResult result = _session.Tap(x, y);
-            _hud.Refresh(_session);
+            TurnResult result;
+            if (EndlessMode)
+            {
+                // The session would stop taps when moves run out, so the rules are called directly;
+                // the level's moves and goals are read but not used.
+                result = TurnRules.Tap(_session.Grid, x, y, _session.ColorCount, _random);
+            }
+            else
+            {
+                result = _session.Tap(x, y);
+                _hud.Refresh(_session);
+            }
             _view.AnimateTurn(result);
         }
     }

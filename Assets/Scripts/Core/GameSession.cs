@@ -86,9 +86,6 @@ namespace BlastGame.Core
             if (Status != GameStatus.Playing)
                 return new TurnResult(new List<CellPos>(), new List<CellMove>(), new List<CellPos>());
 
-            // The grid changes during the tap, so read the tapped cell first: a blasted group has its color.
-            Cell tapped = Grid.Get(x, y);
-
             // If the rules throw, nothing below runs, so moves and goals stay as they were.
             TurnResult result = TurnRules.Tap(Grid, x, y, ColorCount, _random);
             if (!result.HasBlasted)
@@ -96,13 +93,19 @@ namespace BlastGame.Core
 
             MovesLeft--;
 
-            for (int i = 0; i < _goals.Length; i++)
-            {
-                if (_goals[i].Color != tapped.Color)
-                    continue;
-                _remaining[i] = Math.Max(0, _remaining[i] - result.Blasted.Count);
-                break;
-            }
+            // Count every cleared colored cell by its color; special items count for no color.
+            foreach (TurnEffect effect in result.Effects)
+                foreach (ClearedCell c in effect.Cleared)
+                {
+                    if (c.Cell.Kind != CellKind.Color)
+                        continue;
+                    for (int i = 0; i < _goals.Length; i++)
+                        if (_goals[i].Color == c.Cell.Color)
+                        {
+                            _remaining[i] = Math.Max(0, _remaining[i] - 1);
+                            break;
+                        }
+                }
 
             if (AllGoalsDone())
                 Status = GameStatus.Won; // checked before losing: the last move may finish the goals

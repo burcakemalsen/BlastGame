@@ -8,6 +8,15 @@ namespace BlastGame.View
     {
         public static readonly Color Background = Hex(0x1E, 0x1E, 0x2E);
 
+        // Special items without a color: neutral light and dark tones, unlike any tile color.
+        public static readonly Color RocketBody = Hex(0xE8, 0xE8, 0xF0);
+        public static readonly Color RocketArrows = Hex(0xB8, 0xBC, 0xCC);
+        public static readonly Color BombBody = Hex(0x3A, 0x3C, 0x4A);
+        public static readonly Color BombRing = Hex(0xD6, 0xD8, 0xE2);
+        public static readonly Color OrbRing = new Color(1f, 1f, 1f, 0.85f);
+        public static readonly Color Flash = Color.white;
+        public static readonly Color Wave = Hex(0xFF, 0xE8, 0xC0);
+
         public static Color ToColor(TileColor color)
         {
             switch (color)

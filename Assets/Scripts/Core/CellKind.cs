@@ -4,6 +4,7 @@ namespace BlastGame.Core
     public enum CellKind
     {
         Empty = 0,
-        Color
+        Color,
+        Special
     }
 }

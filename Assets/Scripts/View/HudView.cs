@@ -10,6 +10,7 @@ namespace BlastGame.View
     /// <summary>
     /// Builds the on-screen UI in code (the scene file stays untouched): a top bar with moves left and
     /// the goals, a small seed label in a corner, and a result panel with one button (the caller says what it reads and does), and an error panel.
+    /// In endless mode the moves and goals are hidden (their code stays) and a "Next board" button shows instead.
     /// It only shows numbers it is given; it owns no game rules.
     /// </summary>
     public sealed class HudView : MonoBehaviour
@@ -39,6 +40,8 @@ namespace BlastGame.View
         private Text _resultTitle;
         private Text _buttonLabel;
         private GameObject _button;
+        private GameObject _nextButton;
+        private Action _onNextBoard;
         private readonly List<GoalItem> _goalItems = new List<GoalItem>();
         private Action _onButton;
 
@@ -47,9 +50,10 @@ namespace BlastGame.View
             get { return _resultPanel.activeSelf; }
         }
 
-        public void Build(Action onButton)
+        public void Build(Action onButton, Action onNextBoard)
         {
             _onButton = onButton;
+            _onNextBoard = onNextBoard;
             _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             if (EventSystem.current == null)
@@ -71,6 +75,14 @@ namespace BlastGame.View
             BuildBar();
             BuildSeedLabel();
             BuildResultPanel();
+        }
+
+        /// <summary>Endless mode: hides moves and goals, shows the "Next board" button.</summary>
+        public void SetEndless(bool endless)
+        {
+            _movesText.gameObject.SetActive(!endless);
+            _goalsRoot.gameObject.SetActive(!endless);
+            _nextButton.SetActive(endless);
         }
 
         /// <summary>Shows the seed in the corner (the caller also logs it).</summary>
@@ -194,6 +206,25 @@ namespace BlastGame.View
             layout.childControlHeight = false;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
+
+            Image next = NewImage("NextBoardButton", bar.transform, new Color(0.20f, 0.60f, 0.86f, 1f));
+            next.raycastTarget = true;
+            next.rectTransform.anchorMin = new Vector2(1f, 0.5f);
+            next.rectTransform.anchorMax = new Vector2(1f, 0.5f);
+            next.rectTransform.pivot = new Vector2(1f, 0.5f);
+            next.rectTransform.sizeDelta = new Vector2(300f, 110f);
+            next.rectTransform.anchoredPosition = new Vector2(-32f, 0f);
+            var nextButton = next.gameObject.AddComponent<Button>();
+            nextButton.targetGraphic = next;
+            nextButton.onClick.AddListener(OnNextBoardClicked);
+            Text nextLabel = NewText("Label", next.transform, 44, TextAnchor.MiddleCenter);
+            nextLabel.text = "Next board";
+            nextLabel.rectTransform.anchorMin = Vector2.zero;
+            nextLabel.rectTransform.anchorMax = Vector2.one;
+            nextLabel.rectTransform.offsetMin = Vector2.zero;
+            nextLabel.rectTransform.offsetMax = Vector2.zero;
+            _nextButton = next.gameObject;
+            _nextButton.SetActive(false);
         }
 
         private void BuildSeedLabel()
@@ -248,6 +279,11 @@ namespace BlastGame.View
         private void OnButtonClicked()
         {
             if (_onButton != null) _onButton();
+        }
+
+        private void OnNextBoardClicked()
+        {
+            if (_onNextBoard != null) _onNextBoard();
         }
 
         private Image NewImage(string name, Transform parent, Color color)

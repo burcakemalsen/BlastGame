@@ -110,8 +110,10 @@ namespace BlastGame.Core.Tests
             Assert.Equal(BlastRules.Blast(twin, 2, 1), result.Blasted);
         }
 
+        // Spec 06: a 16-cell group now leaves a green orb at the tapped cell; it falls to (2,0)
+        // and the other 15 cells are refilled.
         [Fact]
-        public void Tap_WholeGridOneColor_BlastsAllNoMovesRefillsAll()
+        public void Tap_WholeGridOneColor_BlastsAllOrbFallsRefillsRest()
         {
             Grid grid = TestGrid.Filled(4, 4, TileColor.Green);
             var random = CountingRandom.Cycle(6, 16);
@@ -119,13 +121,13 @@ namespace BlastGame.Core.Tests
             TurnResult result = TurnRules.Tap(grid, 2, 1, 6, random);
 
             Assert.Equal(16, result.Blasted.Count);
-            Assert.Empty(result.Moves);
-            Assert.Equal(16, random.Calls);
+            AssertMoves(new[] { 2, 1, 2, 0 }, result.Moves);
+            Assert.Equal(15, random.Calls);
             TestGrid.AssertGroup(
-                TestGrid.Pts(0, 0, 1, 0, 2, 0, 3, 0, 0, 1, 1, 1, 2, 1, 3, 1,
+                TestGrid.Pts(0, 0, 1, 0, 3, 0, 0, 1, 1, 1, 2, 1, 3, 1,
                              0, 2, 1, 2, 2, 2, 3, 2, 0, 3, 1, 3, 2, 3, 3, 3),
                 result.Filled);
-            TestGrid.AssertRows(new[] { "RGBY", "BYPO", "PORG", "RGBY" }, grid);
+            SpecialGrid.AssertRows(new[] { "ORGB", "GBYP", "YPOR", "RGgB" }, grid);
         }
 
         [Fact]
@@ -253,7 +255,7 @@ namespace BlastGame.Core.Tests
                 TurnResult ra = TurnRules.Tap(a, x, y, 5, randomA);
                 TurnResult rb = TurnRules.Tap(b, x, y, 5, randomB);
 
-                Assert.Equal(TestGrid.Dump(a), TestGrid.Dump(b));
+                Assert.Equal(SpecialGrid.Dump(a), SpecialGrid.Dump(b));
                 Assert.Equal(Format(ra.Blasted), Format(rb.Blasted));
                 Assert.Equal(Format(ra.Moves), Format(rb.Moves));
                 Assert.Equal(Format(ra.Filled), Format(rb.Filled));
@@ -275,7 +277,7 @@ namespace BlastGame.Core.Tests
             TurnRules.Tap(a, 0, 0, 6, new SeededRandom(1));
             TurnRules.Tap(b, 0, 0, 6, new SeededRandom(2));
 
-            Assert.NotEqual(TestGrid.Dump(a), TestGrid.Dump(b));
+            Assert.NotEqual(SpecialGrid.Dump(a), SpecialGrid.Dump(b));
         }
     }
 }

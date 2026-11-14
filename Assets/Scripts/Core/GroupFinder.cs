@@ -8,7 +8,7 @@ namespace BlastGame.Core
     {
         /// <summary>
         /// Cells connected to (x, y) through same-colored 4-neighbours, start included,
-        /// ordered by y then x. Empty start cell gives an empty list.
+        /// ordered by y then x. An empty or special start cell gives an empty list.
         /// </summary>
         public static IReadOnlyList<CellPos> FindGroup(Grid grid, int x, int y)
         {
@@ -20,7 +20,7 @@ namespace BlastGame.Core
 
             var result = new List<CellPos>();
             Cell start = grid.Get(x, y);
-            if (start.IsEmpty) return result;
+            if (start.IsEmpty || start.IsSpecial) return result;
 
             var visited = new bool[grid.Width, grid.Height];
             var stack = new Stack<CellPos>();
