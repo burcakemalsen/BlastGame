@@ -24,7 +24,7 @@ Bu adımda animasyon yok (Adım 9); görüntü bir karede yeni hale geçer. Haml
 - Grid'deki her `Empty` hücreye `Cell.OfColor((TileColor)random.Next(colorCount))` yazar.
 - **Sıra sabittir:** `y` küçükten büyüğe, aynı `y`'de `x` küçükten büyüğe (Adım 1'deki doldurma sırası). Rastgele kaynak yalnız boş hücre başına bir kez çağrılır; dolu hücre için çağrılmaz.
 - Dönüş: doldurulan hücreler, aynı sırayla. Boş hücre yoksa boş liste ve kaynak hiç çağrılmaz.
-- `colorCount` Adım 1'deki gibi `1..6` (`GridFactory.MaxColorCount`); dışı → `ArgumentOutOfRangeException`. `grid` ya da `random` `null` → `ArgumentNullException`. Kontrol sırası: `grid`, `colorCount`, `random`; hepsi kaynağa dokunmadan önce.
+- `colorCount` Adım 1'deki gibi `1..6` (`GridFactory.MaxColorCount`); dışı → `ArgumentOutOfRangeException`. `grid` ya da `random` `null` → `ArgumentNullException`. Kontrol sırası: `grid`, `colorCount`, `random`; hepsi kaynağa dokunmadan önce. Hatanın `ParamName`'i ilgili parametrenin adıdır (`grid`, `colorCount`, `random`); aynı türdeki iki hatanın sırası buna bakılarak ayırt edilir.
 - Kaynak `0 .. colorCount-1` dışında değer döndürürse → `InvalidOperationException` ve **grid değişmez** (önce bütün değerler çekilir ve denetlenir, sonra yazılır).
 - `Fill` boşlukların nerede olduğuna bakmaz; düşmeden önce çağrılırsa ortadaki boşluğu da doldurur. Doğru sırayı `TurnRules.Tap` kurar.
 
@@ -32,7 +32,7 @@ Bu adımda animasyon yok (Adım 9); görüntü bir karede yeni hale geçer. Haml
 - Sıra: `BlastRules.Blast(grid, x, y)` → patlama olduysa `GravityRules.Collapse(grid)` → `RefillRules.Fill(grid, colorCount, random)`.
 - Patlama olmadıysa (tek kare ya da boş hücre) grid değişmez ve **kaynak çağrılmaz**; sonuçtaki üç liste boş. Böylece boşa dokunuşlar sonraki renkleri kaydırmaz.
 - Dönüş `TurnResult`: `Blasted` (Blast'ın listesi), `Moves` (Collapse'ın), `Filled` (Fill'in). `HasBlasted` = `Blasted.Count > 0`.
-- Hatalar, hiçbir şeyi değiştirmeden ve kaynağa dokunmadan önce: `grid` `null` → `ArgumentNullException`; `random` `null` → `ArgumentNullException`; `colorCount` dışı → `ArgumentOutOfRangeException`; `(x, y)` grid dışı → `ArgumentOutOfRangeException`. Sıra: `grid`, `random`, `colorCount`, koordinat.
+- Hatalar, hiçbir şeyi değiştirmeden ve kaynağa dokunmadan önce: `grid` `null` → `ArgumentNullException`; `random` `null` → `ArgumentNullException`; `colorCount` dışı → `ArgumentOutOfRangeException`; `(x, y)` grid dışı → `ArgumentOutOfRangeException`. Sıra: `grid`, `random`, `colorCount`, koordinat. `ParamName` ilgili parametrenin adıdır (`grid`, `random`, `colorCount`; koordinatta önce `x`, sonra `y` kontrol edilir).
 - Kaynak geçersiz değer döndürürse `InvalidOperationException` (Fill'den gelir); bu durumda patlama ve düşme olmuş, doldurma olmamış hal kalır. (Gerçek oyunda kaynak `SeededRandom`'dır ve bu olmaz; testte sahte kaynakla görülür.)
 - **Tekrarlanabilirlik:** aynı başlangıç grid'i, aynı seed'li kaynak ve aynı dokunuş dizisi → hücre hücre aynı grid ve aynı `TurnResult` listeleri.
 
