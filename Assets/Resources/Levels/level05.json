@@ -1,0 +1,20 @@
+{
+  "width": 9,
+  "height": 9,
+  "colors": 4,
+  "moves": 35,
+  "obstacles": [
+    { "type": "Crate", "x": 0, "y": 3 },
+    { "type": "Crate", "x": 1, "y": 3, "layers": 2 },
+    { "type": "Crate", "x": 2, "y": 3, "layers": 3 },
+    { "type": "Crate", "x": 3, "y": 3, "layers": 2 },
+    { "type": "Crate", "x": 4, "y": 3, "layers": 3 },
+    { "type": "Crate", "x": 5, "y": 3, "layers": 2 },
+    { "type": "Crate", "x": 6, "y": 3, "layers": 3 },
+    { "type": "Crate", "x": 7, "y": 3, "layers": 2 },
+    { "type": "Crate", "x": 8, "y": 3 }
+  ],
+  "goals": [
+    { "obstacle": "Crate", "count": 9 }
+  ]
+}

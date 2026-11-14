@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a41afa18d0d40b419bb32d1385d54be, type: 3}
+  m_Name: ObstacleArt
+  m_EditorClassIdentifier: View::BlastGame.View.ObstacleArt
+  Pinata: {fileID: 21300000, guid: ba88a94588c28be45835f9044d6eaf96, type: 3}
+  Crate1: {fileID: 21300000, guid: 2146c25de55bfec4892c2b9e070f228a, type: 3}
+  Crate2: {fileID: 21300000, guid: 9ecc6ff0db6818548bec86c98e7c81f8, type: 3}
+  Crate3: {fileID: 21300000, guid: d8f8c774c1b37924aab1486b3185003e, type: 3}
+  WaterBalloon: {fileID: 21300000, guid: e04a0f37d46e5fc428348cf133c6bfcc, type: 3}
+  Anchor: {fileID: 21300000, guid: f57802128820cdd4da13f2d333c56d6b, type: 3}

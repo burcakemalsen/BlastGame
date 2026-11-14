@@ -15,10 +15,11 @@ namespace BlastGame.View
 
         /// <summary>
         /// Endless play: moves, goals and win/lose are hidden and not applied; the board plays forever and
-        /// "Next board" opens the next level file. Set false to bring the level game back (its code stays).
+        /// "Next board" opens the next level file. Off: the level game (moves, goals, win/lose panel).
+        /// Set true to bring endless play back (its code stays).
         /// static readonly, not const, so the unused branch does not warn.
         /// </summary>
-        private static readonly bool EndlessMode = true;
+        private static readonly bool EndlessMode = false;
 
         private LevelData[] _levels; // null when loading failed; the error panel is up then
         private int _levelIndex;
@@ -51,11 +52,15 @@ namespace BlastGame.View
             _fitter = cam.gameObject.AddComponent<CameraFitter>();
 
             _hud = new GameObject("Hud").AddComponent<HudView>();
-            _hud.Build(OnResultButton, OnNextBoard);
+            _hud.Build(OnResultButton, OnNextBoard, OnLevels);
             _hud.SetEndless(EndlessMode);
 
+            // The game opens on the level select; a level starts when its button is pressed.
             if (LoadLevels())
-                StartLevel(0);
+            {
+                _hud.BuildLevelSelect(_levels.Length, OnPickLevel);
+                _hud.ShowLevelSelect();
+            }
         }
 
         /// <summary>Reads every level file up front. On any problem shows the error panel and returns false.</summary>
@@ -101,6 +106,21 @@ namespace BlastGame.View
             StartLevel(_levelIndex);
         }
 
+        /// <summary>The bar's "Levels" button: back to the level select (the board stays behind it until a pick).</summary>
+        private void OnLevels()
+        {
+            if (_levels == null) return;
+            _hud.HideResult();
+            _hud.ShowLevelSelect();
+        }
+
+        /// <summary>A level select button: that level starts, whatever was being played.</summary>
+        private void OnPickLevel(int index)
+        {
+            _hud.HideLevelSelect();
+            StartLevel(index);
+        }
+
         /// <summary>Endless mode: the next level file (the first after the last) with a new seed; not during an animation.</summary>
         private void OnNextBoard()
         {
@@ -122,6 +142,7 @@ namespace BlastGame.View
             if (_view != null) Destroy(_view.gameObject);
             _view = new GameObject("GridView").AddComponent<GridView>();
             _view.Build(grid);
+            _view.SetGoalTarget(GoalWorldPosition, ShowFlyer, _hud.HideFlyers);
             _fitter.Setup(_camera, grid.Width, grid.Height);
 
             _hud.SetSeed(seed);
@@ -129,6 +150,24 @@ namespace BlastGame.View
             _hud.BuildGoals(_session);
             _hud.Refresh(_session);
             _hud.HideResult();
+        }
+
+        /// <summary>The HUD icon of an obstacle goal in board space (the board sits at the world origin), or null.</summary>
+        private Vector3? GoalWorldPosition(ObstacleKind kind)
+        {
+            Vector2 screen;
+            if (!_hud.TryGetGoalScreenPoint(kind, out screen)) return null;
+            Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, -_camera.transform.position.z));
+            world.z = 0f;
+            return world;
+        }
+
+        /// <summary>Draws a flying item on the HUD at a board position, sized in board units.</summary>
+        private void ShowFlyer(int index, Sprite sprite, Color color, Vector3 boardPos, float size)
+        {
+            Vector3 screen = _camera.WorldToScreenPoint(boardPos);
+            float pixelsPerUnit = _camera.pixelHeight / (2f * _camera.orthographicSize);
+            _hud.ShowFlyer(index, sprite, color, new Vector2(screen.x, screen.y), size * pixelsPerUnit);
         }
 
         private void Update()
@@ -150,7 +189,8 @@ namespace BlastGame.View
             }
 
             // The result panel opens once the last turn has been shown (never in endless mode).
-            if (!EndlessMode && _session.Status != GameStatus.Playing && !_view.IsAnimating && !_hud.IsResultVisible)
+            if (!EndlessMode && _session.Status != GameStatus.Playing && !_view.IsAnimating && !_hud.IsResultVisible
+                && !_hud.IsLevelSelectVisible)
                 ShowResult();
         }
 
@@ -169,6 +209,7 @@ namespace BlastGame.View
 
         private void HandleTap(Vector2 screenPos)
         {
+            if (_hud.IsLevelSelectVisible) return; // the level select covers the board
             if (_view.IsAnimating) return;  // taps are ignored until the turn has been shown
             if (_hud.IsResultVisible) return; // the panel is open; only its button works
             if (!_camera.pixelRect.Contains(screenPos)) return; // the UI bar is not the board
