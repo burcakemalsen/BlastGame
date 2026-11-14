@@ -32,3 +32,9 @@ Zor adım: yeni test için kaba üst sınır **~150** (`Theory` satırları dahi
 - Spec'te belirsiz bulduğun yerler; yazmadığın testler ve nedeni.
 
 Son mesajında kısa özet.
+
+## Ek (kontrol kapısından sonra)
+Kaynak: `reports/03-gravity-refill-claude.md` bulgu 1-2, `reports/03-gravity-refill-gemini.md`. Spec `abe54a5` ile `Fill`/`Tap` hataları için `ParamName` tanımlandı.
+1. Aynı türdeki iki hatanın sırasını `ParamName` ile sına: `Tap`'te `grid`+`random` ikisi `null` → `"grid"`; `colorCount`+koordinat ikisi geçersiz → `"colorCount"`; `x`+`y` ikisi dışarıda → `"x"`. `Fill`'de `grid`+`random` ikisi `null` → `"grid"`. Mevcut sıra testlerine `ParamName` iddiası eklemek mevcut testi değiştirmektir; bunun yerine yeni test yaz.
+2. Boşluğu olan grid'de tek kareye dokunuş: grid değişmez, kaynak çağrılmaz (patlama yoksa `Fill` çağrılmaz kuralını doğrudan sınar).
+Kodu değiştirmeden yeni testler yeşil olmalı (kod zaten doğru); yine de her yeni testin, ilgili sıra bozulunca kırılacağını gerekçesiyle raporla. Rapora "Ek" başlığıyla yaz.

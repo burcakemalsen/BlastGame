@@ -50,3 +50,20 @@ Kırmızıların hepsi yeni testler; nedenleri 53 `NotImplementedException`, 32 
 - **Fill'de geçersiz değerde kaç çağrı yapılır** ("önce bütün değerler çekilir"): ilk geçersizde durmak mı, hepsini çekmek mi belirsiz; çağrı sayısı test edilmedi, yalnız grid'in değişmediği.
 - **`ParamName`** yalnız `TurnResult` için tanımlı. Fill/Tap'ta `grid` ve `random` ikisi de `ArgumentNullException`; ikisinin sırası tür ile ayırt edilemiyor, `colorCount` ve koordinat da ikisi de `ArgumentOutOfRangeException`. Bu iki çiftin sırası test edilmedi (kaynak/grid dokunulmazlığı test edildi).
 - `default(CellMove)` için yalnız hash, `(0,0)->(0,0)` ile eşitlik dolaylı; ayrıca tanımlı değil.
+
+## Ek (kontrol kapısından sonra)
+Spec `abe54a5` ile `Fill`/`Tap` hatalarına `ParamName` tanımlandı. Yeni dosya `tests/Core.Tests/TurnParamNameTests.cs`, **7 yeni test**. Mevcut testler değişmedi.
+
+Hangi bozma hangi testi kırar:
+- `Fill_NullGridAndNullRandom_ParamNameGrid`: `random` kontrolü `grid`'den önce gelirse `"random"` döner, test düşer.
+- `Tap_NullGridAndNullRandom_ParamNameGrid`: aynı şey `Tap` için.
+- `Tap_BadColorCountAndCoordinateOutside_ParamNameColorCount`: koordinat `colorCount`'tan önce denetlenirse `"x"` döner. Kaynak çağrı sayısının 0 olduğunu ve grid'in değişmediğini de sınar.
+- `Tap_XAndYBothOutside_ParamNameX` (`(-1,-1)` ve `(3,3)`, 2 satır): `y` önce denetlenirse ya da tek ortak ad kullanılırsa `"y"`/başka ad döner. Alt ve üst sınırın ikisi de var.
+- `Tap_OnlyYOutside_ParamNameY`: `y` hatasına `"x"` ya da sabit ad verilirse düşer. Bu olmadan yukarıdaki test, her koordinat hatasına `"x"` yazan kodla da geçerdi.
+- `Tap_SingleCellOnGridWithHoles_HolesStaySourceNotCalled`: patlama olmasa da `Fill` çağrılırsa boşluklar dolar ve kaynak çağrılır, test düşer. Önceki boşa dokunuş testlerinde grid'de doldurulacak boşluk yoktu ya da tek boşluk dokunulan hücreydi; bu kuralı doğrudan sınamıyorlardı.
+
+`dotnet test` (uygulama kodu zaten yazılı, yeni testler beklendiği gibi yeşil):
+```
+Başarılı!  - Başarısız:     0, Başarılı:   598, Atlanan:     0, Toplam:   598, Süre: 59 ms - Core.Tests.dll (net10.0)
+```
+Testleri bozma yaparak çalıştırıp kırmızıyı görmedim; yukarıdaki eşleme testlerin iddialarından çıkarıldı.
