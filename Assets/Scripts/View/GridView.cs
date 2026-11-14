@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using BlastGame.Core;
@@ -7,9 +8,11 @@ using Grid = BlastGame.Core.Grid; // UnityEngine.Grid also exists
 namespace BlastGame.View
 {
     /// <summary>
-    /// Draws a grid: colored squares and special items made of primitive shapes. Cell (0, 0) is at the
-    /// world origin; spacing is 1 unit. Animates a turn from its TurnResult: every effect plays on one
-    /// timeline (a chained item starts when the effect that triggers it reaches it), then tiles fall.
+    /// Draws a grid: colored squares, special items made of primitive shapes and obstacles (ObstacleSprites).
+    /// Cell (0, 0) is at the world origin; spacing is 1 unit. Animates a turn from its TurnResult: every
+    /// effect plays on one timeline (a chained item starts when the effect that triggers it reaches it),
+    /// with obstacle hits and balloon pops on the same timeline; then tiles fall and collected Anchors
+    /// slide down and fly to their goal.
     /// </summary>
     public sealed class GridView : MonoBehaviour
     {
@@ -43,6 +46,15 @@ namespace BlastGame.View
         private const float ClearAllWave = 0.4f;
         private const float ConvertPop = 0.1f;         // a converted tile pops into its new item
         private const float ConvertStagger = 0.02f;    // converted items go off almost together
+        private const float HitShake = 0.14f;          // a Crate shakes when it loses a layer
+        private const float HitShakeAmount = 0.08f;
+        private const float BreakVanish = 0.1f;        // a broken Pinata or Crate shrinks away
+        private const float ParticleLife = 0.45f;      // confetti, planks, drops
+        private const float ParticleGravity = -14f;    // world units / s^2
+        private const float SplashWave = 0.2f;
+        private const float AnchorFly = 0.35f;         // a collected Anchor flies to its goal icon
+        private const int ConfettiCount = 10;
+        private const int DropCount = 7;
 
         // Sorting order: tiles under their decoration, effects above both.
         private const int TileOrder = 0;
@@ -53,9 +65,16 @@ namespace BlastGame.View
         private const int WaveOrder = 5;
         private const int FlashOrder = 6;
 
-        private enum TileAnim { None, Shrink, Collect, FlashOut, Hide, OrbSelf, MergeCenter }
+        private enum TileAnim { None, Shrink, Collect, FlashOut, Hide, OrbSelf, MergeCenter, Shake }
 
-        private enum FxKind { RocketHalf, RocketTrail, BombFlash, BombWave, Beam, Shake }
+        private enum FxKind { RocketHalf, RocketTrail, BombFlash, BombWave, Beam, Shake, Particle }
+
+        // Bright confetti and candy colors for a broken Pinata.
+        private static readonly Color[] Confetti =
+        {
+            new Color(1f, 0.25f, 0.75f, 1f), new Color(1f, 0.85f, 0.1f, 1f), new Color(0.1f, 0.85f, 0.85f, 1f),
+            new Color(1f, 0.55f, 0.1f, 1f), new Color(0.6f, 0.4f, 1f, 1f)
+        };
 
         private struct TileStep
         {
@@ -75,7 +94,9 @@ namespace BlastGame.View
             public Vector3 To;
             public Color Color;
             public SpriteRenderer Renderer; // null for Shake
-            public float Size;              // flash/wave: end scale; shake: amount
+            public float Size;              // flash/wave: end scale; shake: amount; particle: scale
+            public float Spin;              // particle: degrees per second
+            public float Stretch;           // particle: width / height
         }
 
         // A tile that takes a new look mid-timeline (a colored cell turned into an item, the Orb of a combo).
@@ -103,11 +124,19 @@ namespace BlastGame.View
         private Cell _popCell;
         private float _popStart;
         private bool _isAnimating;
+        private Func<ObstacleKind, Vector3?> _goalTarget;
+        private readonly List<SpriteRenderer> _flyers = new List<SpriteRenderer>(); // collected Anchors, reused
 
         /// <summary>True while a turn is being animated; taps should be ignored meanwhile.</summary>
         public bool IsAnimating
         {
             get { return _isAnimating; }
+        }
+
+        /// <summary>Where the goal icon of an obstacle kind is, in board space (null: no icon, the item just fades).</summary>
+        public void SetGoalTarget(Func<ObstacleKind, Vector3?> goalTarget)
+        {
+            _goalTarget = goalTarget;
         }
 
         public void Build(Grid grid)
@@ -222,15 +251,30 @@ namespace BlastGame.View
                 _fallStart[p.X, p.Y] = CellPosition(p.X, p.Y + _newInColumn[p.X]);
             Refresh();
             ApplyFall(0f);
+            StartCollected(result.Collected);
 
-            // 3. Everything falls together, slow start and fast end (cubic ease-in).
+            // 3. Everything falls together, slow start and fast end (cubic ease-in); collected Anchors slide to y = 0.
             for (float t = 0f; t < FallDuration; t += Time.deltaTime)
             {
                 float k = t / FallDuration;
                 ApplyFall(k * k * k);
+                ApplyCollectedFall(result.Collected, k * k * k);
                 yield return null;
             }
+            ApplyCollectedFall(result.Collected, 1f);
             ApplyFall(1f);
+
+            // 4. Collected Anchors: they slid down with the fall (see AnimateCollected); now they fly to the goal.
+            if (result.Collected.Count > 0)
+            {
+                Vector3? target = _goalTarget != null ? _goalTarget(ObstacleKind.Anchor) : null;
+                for (float t = 0f; t < AnchorFly; t += Time.deltaTime)
+                {
+                    ApplyFly(result.Collected, target, t / AnchorFly);
+                    yield return null;
+                }
+                for (int i = 0; i < _flyers.Count; i++) _flyers[i].enabled = false;
+            }
 
             _isAnimating = false;
         }
@@ -283,7 +327,197 @@ namespace BlastGame.View
                 }
                 end = Mathf.Max(end, done);
             }
+
+            // Obstacle hits and balloon pops, on the same timeline as the effect that made them.
+            for (int i = 0; i < effects.Count; i++)
+            {
+                end = Mathf.Max(end, PlanHits(effects[i], _effectStart[i]));
+                end = Mathf.Max(end, PlanBalloons(effects[i], _effectStart[i]));
+            }
             return end;
+        }
+
+        // ---------- Obstacles ----------
+
+        /// <summary>When an effect reaches a cell it hits (rockets travel; a group, Bomb or Orb hits at once).</summary>
+        private static float HitTime(TurnEffect e, CellPos p)
+        {
+            switch (e.Kind)
+            {
+                case EffectKind.Group:
+                    return e.Created.IsEmpty ? BlastDuration * 0.5f : CollectDuration;
+                case EffectKind.Orb:
+                    return OrbPulse + OrbBeam;
+                case EffectKind.Bomb:
+                    return 0.02f;
+                case EffectKind.OrbOrb:
+                    return MergeDuration + 0.1f;
+                default:
+                    return ReachTime(e, p);
+            }
+        }
+
+        private float PlanHits(TurnEffect e, float start)
+        {
+            float end = start;
+            foreach (ObstacleHit hit in e.Hits)
+            {
+                CellPos p = hit.Pos;
+                float t = start + HitTime(e, p);
+                Vector3 at = CellPosition(p.X, p.Y);
+                bool crate = hit.Before.Obstacle == ObstacleKind.Crate;
+                if (hit.After.IsEmpty)
+                {
+                    SetStep(p, TileAnim.Shrink, t, BreakVanish);
+                    if (crate)
+                        AddPlanks(at, t, 3);
+                    else
+                        AddBurst(at, t, ConfettiCount, Confetti, ShapeSprites.Square, 0.13f, 4.5f, p.X * 7 + p.Y * 13);
+                }
+                else
+                {
+                    // The Crate loses a layer: it shows the next look, shakes, and one plank falls off.
+                    _looks.Add(new Look { Pos = p, Cell = hit.After, Start = t });
+                    SetStep(p, TileAnim.Shake, t, HitShake);
+                    AddPlanks(at, t, 1);
+                }
+                end = Mathf.Max(end, t + ParticleLife);
+            }
+            return end;
+        }
+
+        /// <summary>Every balloon on a cleared or converted cell pops with a splash when its cell goes.</summary>
+        private float PlanBalloons(TurnEffect e, float start)
+        {
+            float end = start;
+            foreach (ClearedCell c in e.Cleared)
+            {
+                if (!c.Cell.HasBalloon) continue;
+                TileStep step = _steps[c.Pos.X, c.Pos.Y];
+                float t = step.Anim != TileAnim.None ? step.Start : start;
+                end = Mathf.Max(end, AddSplash(c.Pos, t));
+            }
+            foreach (ClearedCell c in e.Converted)
+            {
+                if (!c.Cell.HasBalloon) continue;
+                float t = start;
+                for (int i = 0; i < _looks.Count; i++)
+                    if (_looks[i].Pos == c.Pos) t = _looks[i].Start;
+                end = Mathf.Max(end, AddSplash(c.Pos, t));
+            }
+            return end;
+        }
+
+        private float AddSplash(CellPos p, float t)
+        {
+            Vector3 at = CellPosition(p.X, p.Y);
+            Color water = ObstacleSprites.Water;
+            AddBurst(at, t, DropCount, new[] { water }, ShapeSprites.Disc, 0.16f, 3.5f, p.X * 5 + p.Y * 11);
+            AddFx(FxKind.BombWave, t, SplashWave, at, at, water, WaveOrder, ShapeSprites.Ring, 1.4f);
+            return t + ParticleLife;
+        }
+
+        /// <summary>Pieces flying out of a cell and falling; directions are spread evenly, turned by a seed.</summary>
+        private void AddBurst(Vector3 at, float t, int count, Color[] colors, Sprite sprite, float size, float speed, int seed)
+        {
+            float turn = (seed * 37) % 360;
+            for (int i = 0; i < count; i++)
+            {
+                float angle = (turn + i * 360f / count) * Mathf.Deg2Rad;
+                float v = speed * (0.7f + 0.3f * ((i * 7 + seed) % 5) / 4f);
+                var velocity = new Vector3(Mathf.Cos(angle) * v, Mathf.Sin(angle) * v + 2f, 0f);
+                AddParticle(at, t, velocity, colors[i % colors.Length], sprite, size, 1f, (i % 2 == 0 ? 1 : -1) * 540f);
+            }
+        }
+
+        /// <summary>Broken wooden planks dropping off a Crate.</summary>
+        private void AddPlanks(Vector3 at, float t, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                float side = count == 1 ? 0.6f : (i - (count - 1) * 0.5f) * 1.2f;
+                var velocity = new Vector3(side, 2.2f + 0.4f * i, 0f);
+                AddParticle(at + new Vector3(0f, 0.1f * i, 0f), t, velocity, ObstacleSprites.Wood, ShapeSprites.Square,
+                            0.12f, 5f, (i % 2 == 0 ? 1 : -1) * 260f);
+            }
+        }
+
+        private void AddParticle(Vector3 at, float t, Vector3 velocity, Color color, Sprite sprite, float size,
+                                 float stretch, float spin)
+        {
+            SpriteRenderer sr = TakeFromPool();
+            sr.sprite = sprite;
+            sr.sortingOrder = FlashOrder;
+            sr.enabled = false;
+            _fx.Add(new Fx
+            {
+                Kind = FxKind.Particle, Start = t, Duration = ParticleLife, From = at, To = velocity, Color = color,
+                Renderer = sr, Size = size, Spin = spin, Stretch = stretch
+            });
+        }
+
+        // ---------- Collected Anchors ----------
+
+        private void StartCollected(IReadOnlyList<CellMove> collected)
+        {
+            Color tint;
+            Sprite sprite = ObstacleSprites.For(ObstacleKind.Anchor, 1, out tint);
+            while (_flyers.Count < collected.Count)
+            {
+                var go = new GameObject("Anchor");
+                go.transform.SetParent(transform, false);
+                SpriteRenderer sr = NewRenderer(go, HalfOrder);
+                sr.maskInteraction = SpriteMaskInteraction.None; // it flies over the HUD bar
+                _flyers.Add(sr);
+            }
+            for (int i = 0; i < _flyers.Count; i++)
+            {
+                SpriteRenderer sr = _flyers[i];
+                sr.enabled = i < collected.Count;
+                if (!sr.enabled) continue;
+                sr.sprite = sprite;
+                sr.color = tint;
+                SetScale(sr.transform, TileSize);
+            }
+        }
+
+        private void ApplyCollectedFall(IReadOnlyList<CellMove> collected, float amount)
+        {
+            for (int i = 0; i < collected.Count; i++)
+            {
+                CellMove m = collected[i];
+                // Slides to the bottom row, then a little further down, as if it sinks out of the board.
+                Vector3 from = CellPosition(m.From.X, m.From.Y);
+                Vector3 to = CellPosition(m.To.X, m.To.Y) + new Vector3(0f, -0.35f, 0f);
+                _flyers[i].transform.localPosition = Vector3.LerpUnclamped(from, to, amount);
+            }
+        }
+
+        private void ApplyFly(IReadOnlyList<CellMove> collected, Vector3? target, float k)
+        {
+            float e = EaseInOut(Mathf.Clamp01(k));
+            for (int i = 0; i < collected.Count; i++)
+            {
+                CellMove m = collected[i];
+                Vector3 from = CellPosition(m.To.X, m.To.Y) + new Vector3(0f, -0.35f, 0f);
+                SpriteRenderer sr = _flyers[i];
+                Color c = sr.color;
+                if (target.HasValue)
+                {
+                    // An arc up to the icon, shrinking to icon size.
+                    Vector3 pos = Vector3.Lerp(from, target.Value, e);
+                    pos.x += Mathf.Sin(Mathf.PI * e) * 0.6f;
+                    sr.transform.localPosition = pos;
+                    SetScale(sr.transform, TileSize * Mathf.Lerp(1f, 0.55f, e));
+                    c.a = k < 0.85f ? 1f : 1f - (k - 0.85f) / 0.15f;
+                }
+                else
+                {
+                    sr.transform.localPosition = from + new Vector3(0f, -0.5f * e, 0f);
+                    c.a = 1f - e;
+                }
+                sr.color = c;
+            }
         }
 
         /// <summary>Time from the start of an effect until it reaches a cell (when a chained item there fires).</summary>
@@ -676,6 +910,11 @@ namespace BlastGame.View
                     else size = 1f - EaseIn((k - 0.8f) / 0.2f);
                     SetScale(tile, TileSize * size);
                     break;
+                case TileAnim.Shake:
+                    // Side to side around its cell, dying out; the scale is left to its look.
+                    float wobble = k >= 1f ? 0f : Mathf.Sin(k * Mathf.PI * 6f) * HitShakeAmount * (1f - k);
+                    tile.localPosition = CellPosition(x, y) + new Vector3(wobble, 0f, 0f);
+                    break;
                 case TileAnim.MergeCenter:
                     // Swells while the others land on it, then gives way to the combo.
                     SetScale(tile, k >= 1f ? 0f : TileSize * (1f + 0.25f * Mathf.Sin(Mathf.PI * k)));
@@ -729,6 +968,17 @@ namespace BlastGame.View
                     c.a = 1f - EaseIn(k);
                     fx.Renderer.color = c;
                     break;
+                case FxKind.Particle:
+                {
+                    // Thrown with its velocity (To), pulled down, spinning, fading out at the end.
+                    float s = t - fx.Start;
+                    tr.localPosition = fx.From + fx.To * s + new Vector3(0f, 0.5f * ParticleGravity * s * s, 0f);
+                    tr.localRotation = Quaternion.Euler(0f, 0f, fx.Spin * s);
+                    tr.localScale = new Vector3(fx.Size * fx.Stretch, fx.Size, 1f);
+                    c.a *= k < 0.6f ? 1f : 1f - (k - 0.6f) / 0.4f;
+                    fx.Renderer.color = c;
+                    break;
+                }
                 case FxKind.Beam:
                 {
                     Vector3 d = fx.To - fx.From;
@@ -771,6 +1021,22 @@ namespace BlastGame.View
             {
                 sr.sprite = ShapeSprites.Square;
                 sr.color = TileColors.ToColor(cell.Color);
+                // A water balloon is a see-through layer on top of the square.
+                deco.enabled = cell.HasBalloon;
+                if (cell.HasBalloon)
+                {
+                    Color balloonTint;
+                    deco.sprite = ObstacleSprites.For(ObstacleKind.WaterBalloon, 1, out balloonTint);
+                    deco.color = balloonTint;
+                    SetScale(deco.transform, 1.08f);
+                }
+                return;
+            }
+            if (cell.IsObstacle)
+            {
+                Color tint;
+                sr.sprite = ObstacleSprites.ForCell(cell, out tint);
+                sr.color = tint;
                 deco.enabled = false;
                 return;
             }

@@ -22,3 +22,42 @@ Not: çalıştırmadan önce `tasklist`'te küçük bir `unity.exe` süreci (5 M
 3. **`Cell.WithBalloon(false)` renkli olmayan hücrede.** Spec "renkli değilse `InvalidOperationException`" diyor; `false` için de hata mı (öyle uygulayacağım), yoksa no-op mu?
 4. **`ObstacleGoal` tanımsız tür + `default(ObstacleGoal)`.** `default` Count 0 verir; `GameSession` bunu "Count < 1" ile yakalar. Sorun yok, yalnız not.
 5. **`Remaining(ObstacleKind)` tanımsız türde** (`(ObstacleKind)99`): hedef olmadığı için `ArgumentException(kind)` atacağım; `ArgumentOutOfRangeException` beklenmiyorsa yeterli.
+
+## Aşama B
+
+### Değişen dosyalar
+- Kural katmanı (`Assets/Scripts/Core/`): `Cell`, `ObstacleHit`, `ObstacleGoal`, `ObstaclePlacement`, `GravityResult`, `GravityRules` (`Settle`, Sandık bölümleri), `RefillRules` (en üst Sandığın üstü), `GroupFinder` (balon fark etmez, engelde boş), `SpecialRules` (vuruşlar, roket engelden geçer, Orb komşu vuruşu, `OrbOrb`, `OrbRocket`/`OrbBomb` tek patlama), `TurnRules` (grup vuruşu, `Settle`, `Collected`), `TurnEffect`, `TurnResult`, `GameSession`, `LevelData`, `LevelParser`.
+- Görüntü katmanı (`Assets/Scripts/View/`): `GameBootstrap` (level modu açık, `EndlessMode = false`, kod duruyor), `HudView` (engel hedefleri simgeleriyle), `GridView` (engel ve balon çizimi, animasyonlar), yeni `ObstacleSprites` (bütün engel görünüşleri tek yerde; görsel yoksa koddan yer tutucu), yeni `ObstacleArt` (sprite listesi, `Resources/ObstacleArt.asset`).
+- Görseller: `Assets/Editor/ObstacleArtImporter.cs`, `Assets/Art/Obstacles/*.png` (6 adet: pinata, crate1-3, waterballoon, anchor; 256 px, şeffaf), `Assets/Resources/ObstacleArt.asset`.
+- Deneme levelleri: `Assets/Resources/Levels/level04.json` (Pinyata), `level05` (Sandık rafı, 1-3 kat), `level06` (Su balonu + Red), `level07` (Çapa).
+
+### Görseller
+Kaynak: Gemini (Antigravity) görsel üretimi ile üretildi, ürün sahibi onayladı. Kaynak JPG'ler `Builds/art-draft/` altında kalır, repoya girmez.
+
+Bunu tekrar üretmek için Editor kapalıyken `Unity.exe -batchmode -quit -projectPath . -executeMethod ObstacleArtImporter.Run -logFile Logs/obstacle-art.log` çalıştırılır (menüden: Tools > BlastGame > Import Obstacle Art). Araç şunları yapar:
+- Beyaz arka planı kenarlardan başlayan bir taşma dolgusuyla siler ve kenarları yumuşatır. Çapa halkasının kapalı deliği için ayrı bir tohum noktası verildi.
+- Su balonunun gövdesini yarı saydam yapar: ortası ince beyaz film, kenara doğru turkuaz. Dış çizgi, düğüm ve parlamalar kalır.
+- Sandık görselini üçe böler, her parçayı kırpıp kare yapar.
+
+Sonucu kırmızı kare ve dama deseni üzerinde göz kontrolüyle doğruladım: dış arka plan saydam ve balonun altından karenin rengi görünüyor.
+
+### Kontroller
+- `dotnet test`: `Başarılı!  - Başarısız:     0, Başarılı:  1215, Atlanan:     0, Toplam:  1215`
+- `scripts/unity-check.ps1`: `Unity compile check: clean.` (çıkış 0)
+- Ek deneme (scratchpad'de, repoya girmez): yedi level de ayrıştırıldı ve her biri 300 seed ile rastgele oynatıldı. İstisna çıkmadı; vuruş ve Çapa toplama gerçekleşti.
+
+### Bir test için kodda yaptığım uyum
+Eski bir test (`Parse_BadGoals_MessageContainsGoalPath`, `[ { "count": 5 } ]`) mesajda `'goals[0].color'` bekliyor. Netleştirmeye göre ise bu durumda yol `'goals[0]'` olmalı. Mesajı şöyle yazdım: `Goal 'goals[0]' needs exactly one of 'goals[0].color' and 'goals[0].obstacle'.` Bu mesaj ikisini de içeriyor. Özel durum kodu değil, ama testin sözleşmeye göre güncellenmesi (testçi) daha temiz olur; karar sizin.
+
+### Animasyonda spec'ten sapmalar
+- "Hedefe sayılan engeller HUD'a uçar" yalnız Çapa için yapıldı (dibe kayar, sonra simgeye yay çizerek uçar). Renk hedefinde uçuş olmadığı için ("varsa") Pinyata, Sandık ve balonda uçuş yok.
+- Pinyata konfetisi ve balon damlaları tahta maskesinin içinde çizilir, tahta kenarında kırpılabilir.
+- HUD sayacı eskisi gibi dokunuş anında güncellenir, animasyonun bitmesini beklemez.
+
+### Doğrulanmayanlar
+- Editor'de ve WebGL'de elle kontrol listesi yapılmadı: animasyonların görünüşü, zamanlaması, HUD yerleşimi ve iki hedefli level'da sığma.
+- Level modunda deneme levellerine (4-7) ulaşmak için 1-3'ü kazanmak gerekiyor.
+
+### Öneriler
+- Elle deneme için geçici bir level seçici, ya da deneme levellerini başa alan bir bayrak (Backlog).
+- Kökte `AGENTS.md` adlı izlenmeyen bir dosya var; benim değil, dokunmadım.

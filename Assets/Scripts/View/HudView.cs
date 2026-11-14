@@ -9,7 +9,7 @@ namespace BlastGame.View
 {
     /// <summary>
     /// Builds the on-screen UI in code (the scene file stays untouched): a top bar with moves left and
-    /// the goals, a small seed label in a corner, and a result panel with one button (the caller says what it reads and does), and an error panel.
+    /// the goals (color swatches, then obstacle icons), a small seed label in a corner, and a result panel with one button (the caller says what it reads and does), and an error panel.
     /// In endless mode the moves and goals are hidden (their code stays) and a "Next board" button shows instead.
     /// It only shows numbers it is given; it owns no game rules.
     /// </summary>
@@ -26,7 +26,10 @@ namespace BlastGame.View
 
         private sealed class GoalItem
         {
-            public TileColor Color;
+            public bool IsObstacle;
+            public TileColor Color;     // color goals
+            public ObstacleKind Kind;   // obstacle goals
+            public Color SwatchColor;   // full-alpha swatch or icon tint
             public Image Swatch;
             public Text Label;
         }
@@ -106,24 +109,67 @@ namespace BlastGame.View
 
             foreach (ColorGoal goal in session.Goals)
             {
-                var item = new GameObject("Goal " + goal.Color, typeof(RectTransform));
-                item.transform.SetParent(_goalsRoot, false);
-                ((RectTransform)item.transform).sizeDelta = new Vector2(164f, 90f);
-
-                var swatch = NewImage("Swatch", item.transform, TileColors.ToColor(goal.Color));
-                swatch.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-                swatch.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-                swatch.rectTransform.pivot = new Vector2(0f, 0.5f);
-                swatch.rectTransform.sizeDelta = new Vector2(56f, 56f);
-
-                var label = NewText("Count", item.transform, 44, TextAnchor.MiddleLeft);
-                label.rectTransform.anchorMin = new Vector2(0f, 0f);
-                label.rectTransform.anchorMax = new Vector2(1f, 1f);
-                label.rectTransform.offsetMin = new Vector2(64f, 0f);
-                label.rectTransform.offsetMax = Vector2.zero;
-
-                _goalItems.Add(new GoalItem { Color = goal.Color, Swatch = swatch, Label = label });
+                Color color = TileColors.ToColor(goal.Color);
+                GoalItem item = NewGoalItem("Goal " + goal.Color, null, color);
+                item.Color = goal.Color;
+                _goalItems.Add(item);
             }
+            foreach (ObstacleGoal goal in session.ObstacleGoals)
+            {
+                Color tint;
+                Sprite icon = ObstacleSprites.For(goal.Kind, 1, out tint);
+                GoalItem item = NewGoalItem("Goal " + goal.Kind, icon, tint);
+                item.IsObstacle = true;
+                item.Kind = goal.Kind;
+                _goalItems.Add(item);
+            }
+        }
+
+        /// <summary>
+        /// Screen position of an obstacle goal's icon, for effects that fly to it. False when that kind is not a
+        /// goal or the goals are hidden.
+        /// </summary>
+        public bool TryGetGoalScreenPoint(ObstacleKind kind, out Vector2 screen)
+        {
+            screen = Vector2.zero;
+            if (!_goalsRoot.gameObject.activeInHierarchy) return false;
+            for (int i = 0; i < _goalItems.Count; i++)
+            {
+                GoalItem item = _goalItems[i];
+                if (!item.IsObstacle || item.Kind != kind) continue;
+                // Screen-space overlay canvas: the world position is the screen position.
+                RectTransform rt = item.Swatch.rectTransform;
+                Vector3 p = rt.TransformPoint(rt.rect.center);
+                screen = new Vector2(p.x, p.y);
+                return true;
+            }
+            return false;
+        }
+
+        private GoalItem NewGoalItem(string name, Sprite icon, Color color)
+        {
+            var item = new GameObject(name, typeof(RectTransform));
+            item.transform.SetParent(_goalsRoot, false);
+            ((RectTransform)item.transform).sizeDelta = new Vector2(150f, 90f);
+
+            var swatch = NewImage("Swatch", item.transform, color);
+            if (icon != null)
+            {
+                swatch.sprite = icon;
+                swatch.preserveAspect = true;
+            }
+            swatch.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            swatch.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            swatch.rectTransform.pivot = new Vector2(0f, 0.5f);
+            swatch.rectTransform.sizeDelta = icon != null ? new Vector2(64f, 64f) : new Vector2(56f, 56f);
+
+            var label = NewText("Count", item.transform, 44, TextAnchor.MiddleLeft);
+            label.rectTransform.anchorMin = new Vector2(0f, 0f);
+            label.rectTransform.anchorMax = new Vector2(1f, 1f);
+            label.rectTransform.offsetMin = new Vector2(70f, 0f);
+            label.rectTransform.offsetMax = Vector2.zero;
+
+            return new GoalItem { SwatchColor = color, Swatch = swatch, Label = label };
         }
 
         /// <summary>Updates the numbers from the session. Allocates no objects (only the label strings).</summary>
@@ -133,12 +179,12 @@ namespace BlastGame.View
             for (int i = 0; i < _goalItems.Count; i++)
             {
                 GoalItem item = _goalItems[i];
-                int left = session.Remaining(item.Color);
+                int left = item.IsObstacle ? session.Remaining(item.Kind) : session.Remaining(item.Color);
                 bool done = left == 0;
                 item.Label.text = done ? "Done" : left.ToString();
                 float alpha = done ? DoneAlpha : 1f;
-                Color c = item.Swatch.color;
-                c.a = alpha;
+                Color c = item.SwatchColor;
+                c.a *= alpha;
                 item.Swatch.color = c;
                 Color t = item.Label.color;
                 t.a = alpha;

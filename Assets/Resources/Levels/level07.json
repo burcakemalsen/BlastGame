@@ -1,0 +1,14 @@
+{
+  "width": 9,
+  "height": 9,
+  "colors": 4,
+  "moves": 25,
+  "obstacles": [
+    { "type": "Anchor", "x": 1, "y": 8 },
+    { "type": "Anchor", "x": 4, "y": 8 },
+    { "type": "Anchor", "x": 7, "y": 8 }
+  ],
+  "goals": [
+    { "obstacle": "Anchor", "count": 3 }
+  ]
+}

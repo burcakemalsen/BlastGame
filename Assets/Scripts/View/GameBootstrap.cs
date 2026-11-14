@@ -15,10 +15,11 @@ namespace BlastGame.View
 
         /// <summary>
         /// Endless play: moves, goals and win/lose are hidden and not applied; the board plays forever and
-        /// "Next board" opens the next level file. Set false to bring the level game back (its code stays).
+        /// "Next board" opens the next level file. Off: the level game (moves, goals, win/lose panel).
+        /// Set true to bring endless play back (its code stays).
         /// static readonly, not const, so the unused branch does not warn.
         /// </summary>
-        private static readonly bool EndlessMode = true;
+        private static readonly bool EndlessMode = false;
 
         private LevelData[] _levels; // null when loading failed; the error panel is up then
         private int _levelIndex;
@@ -122,6 +123,7 @@ namespace BlastGame.View
             if (_view != null) Destroy(_view.gameObject);
             _view = new GameObject("GridView").AddComponent<GridView>();
             _view.Build(grid);
+            _view.SetGoalTarget(GoalWorldPosition);
             _fitter.Setup(_camera, grid.Width, grid.Height);
 
             _hud.SetSeed(seed);
@@ -129,6 +131,16 @@ namespace BlastGame.View
             _hud.BuildGoals(_session);
             _hud.Refresh(_session);
             _hud.HideResult();
+        }
+
+        /// <summary>The HUD icon of an obstacle goal in board space (the board sits at the world origin), or null.</summary>
+        private Vector3? GoalWorldPosition(ObstacleKind kind)
+        {
+            Vector2 screen;
+            if (!_hud.TryGetGoalScreenPoint(kind, out screen)) return null;
+            Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, -_camera.transform.position.z));
+            world.z = 0f;
+            return world;
         }
 
         private void Update()

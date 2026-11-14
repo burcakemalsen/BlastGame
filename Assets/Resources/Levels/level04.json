@@ -1,0 +1,19 @@
+{
+  "width": 9,
+  "height": 9,
+  "colors": 4,
+  "moves": 20,
+  "obstacles": [
+    { "type": "Pinata", "x": 1, "y": 4 },
+    { "type": "Pinata", "x": 3, "y": 4 },
+    { "type": "Pinata", "x": 5, "y": 4 },
+    { "type": "Pinata", "x": 7, "y": 4 },
+    { "type": "Pinata", "x": 1, "y": 6 },
+    { "type": "Pinata", "x": 3, "y": 6 },
+    { "type": "Pinata", "x": 5, "y": 6 },
+    { "type": "Pinata", "x": 7, "y": 6 }
+  ],
+  "goals": [
+    { "obstacle": "Pinata", "count": 8 }
+  ]
+}
