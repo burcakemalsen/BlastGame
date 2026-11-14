@@ -35,3 +35,7 @@ Mevcut tiplere, görüntü katmanına ve `tests/`'e dokunulmadı. Commit, dal de
 **Yapamadıklarım / doğrulamadıklarım:** Editor'de Play çalıştırmadım; elle kontrol listesi (2-5) yapılmadı, yalnız derleme doğrulandı. Düzen (bar, panel, buton boyutu, dikey ekrana sığma) gözle görülmedi. `Text` için `LegacyRuntime.ttf` yerleşik fontu varsayıldı; çalışmazsa yazılar görünmez. `EventSystem` için `StandaloneInputModule` (eski Input) kullanıldı, WebGL'de buton tıklaması elle denenmeli.
 
 **Öneri:** `ColorGoal` kurucusu `color` değerini `Enum.IsDefined` ile denetleyebilir (spec dışı, eklemedim).
+
+## Düzeltme
+`GameSession.Goals` artık kurucuda bir kez `Array.AsReadOnly` ile sarılan salt okunur görünümü döndürüyor (`(ColorGoal[])session.Goals` cast'i başarısız olur); yalnız `GameSession.cs` değişti.
+`dotnet test`: `Başarısız: 0, Başarılı: 681, Toplam: 681`; `unity-check`: `Unity compile check: clean.` (çıkış 0).

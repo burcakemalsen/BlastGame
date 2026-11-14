@@ -8,6 +8,7 @@ namespace BlastGame.Core
     {
         private readonly IRandomSource _random;
         private readonly ColorGoal[] _goals;
+        private readonly IReadOnlyList<ColorGoal> _goalsView; // read-only wrapper; a cast back to an array fails
         private readonly int[] _remaining; // same order as _goals
 
         public GameSession(Grid grid, int colorCount, int moves, IReadOnlyList<ColorGoal> goals, IRandomSource random)
@@ -46,6 +47,7 @@ namespace BlastGame.Core
             MovesLeft = moves;
             Status = GameStatus.Playing;
             _goals = copy;
+            _goalsView = Array.AsReadOnly(copy);
             _remaining = new int[copy.Length];
             for (int i = 0; i < copy.Length; i++)
                 _remaining[i] = copy[i].Count;
@@ -63,7 +65,7 @@ namespace BlastGame.Core
         /// <summary>Initial goals, in the order given.</summary>
         public IReadOnlyList<ColorGoal> Goals
         {
-            get { return _goals; }
+            get { return _goalsView; }
         }
 
         public int Remaining(TileColor color)
