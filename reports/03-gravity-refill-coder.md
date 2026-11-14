@@ -33,3 +33,21 @@ Sonuç: 1 ve 2 spec'te netleşti (`9e60302`), 3 test edilmiyor; yeni liste kald�
 - Spec'teki "Madde Backlog'dan silinir" (sprite önbelleği): `Backlog.md` kodcunun alanı (`Assets/`) dışında olduğu için silmedim; orchestrator'a bırakıldı.
 
 **Öneri:** yok.
+
+## Aşama C
+
+**Değişen:**
+- `View/GridView.cs`: `AnimateTurn(TurnResult)` + `IsAnimating`. Korutin: önce `Blasted` kareleri doğrusal küçülür; sonra `Refresh` ile renkler son hale geçer, her kare başlangıç konumuna alınır (`Moves` için `From`, `Filled` için hücresinin sütundaki yeni kare sayısı kadar üstü) ve hepsi aynı anda `t³` ile hücresine iner, sonda tam konuma oturtulur. Grid'in kopyası tutulmaz. Başlangıç konumları ve sütun sayaçları `Build`'de bir kez ayrılan dizilerde tekrar kullanılır. Maske: grid alanını kaplayan bir `SpriteMask` (aynı önbellekteki sprite, `Build`'de bir kez); kareler `VisibleInsideMask`.
+- `View/GameBootstrap.cs`: animasyon sürerken dokunuş yok sayılır; dokunuşta `TurnRules.Tap` sonucu `AnimateTurn`'e verilir (`Refresh` artık animasyonun içinde). Patlama yoksa görüntü değişmez.
+- Kural katmanı, `tests/`, sahne değişmedi; paket eklenmedi (`SpriteMask` Unity'nin yerleşik modülünden, `manifest.json` değişmedi).
+
+**Sabitler (`GridView`):** `BlastDuration = 0.12f` sn, `FallDuration = 0.35f` sn (`TileSize = 0.9f` değişmedi).
+
+**Kontroller:**
+- `dotnet test tests/BlastGame.Tests.slnx` → `Başarılı!  - Başarısız: 0, Başarılı: 598, Atlanan: 0, Toplam: 598`
+- `scripts/unity-check.ps1` → `Unity compile check: clean.`, çıkış 0; log'da `error CS` yok.
+
+**Emin olmadıklarım / doğrulanmadı:**
+- Editor'de ve iPhone'da görsel olarak denenmedi (maskenin kenarı, akıcılık, Ek A elle kontrol 1-5).
+- Dokunuş başına bir korutin nesnesi oluşur (geçici çöp, kalıcı nesne değil); spec'in "kalıcı nesne yok" şartını karşıladığını düşünüyorum.
+- Küçülme doğrusal; spec yalnız "küçülerek" diyor, ease belirtmiyor.

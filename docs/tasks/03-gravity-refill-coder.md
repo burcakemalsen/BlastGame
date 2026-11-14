@@ -33,3 +33,12 @@ Model: Opus 5.5. Proje klasörü: `C:\Dev\BlastGame`, dal `step/03-gravity-refil
 5. `scripts/build-webgl.ps1` ile WebGL derle (Terminal panelinde). Yayına alma.
 
 **Rapor (Aşama B):** aynı dosyaya "Aşama B" başlığıyla: değişen dosyalar, `dotnet test` özeti (toplam/geçen/kalan), `unity-check` ve WebGL sonuç satırları, yapamadıkların, emin olmadıkların, öneriler.
+
+## Aşama C: düşme animasyonu (orchestrator başlatınca)
+Spec'in "Ek A" bölümü (`fc0a210`). Yalnız `Assets/Scripts/View/` değişir; kural katmanı ve `tests/` değişmez.
+1. Animasyonu yalnız `TurnRules.Tap`'in döndürdüğü `TurnResult`'tan çiz: `Blasted` küçülerek kaybolur, sonra `Moves` ve `Filled` sabit sürede kübik ease-in ile düşer; yeni kareler sütunlarında grid'in üstünden gelir. Süreler adlandırılmış sabit.
+2. Grid alanının dışında kalan kareler görünmez (maske). Animasyon sürerken dokunuş yok sayılır.
+3. Mevcut kare nesneleri kullanılır; dokunuş başına yeni doku ya da kalıcı nesne yok. Paket ekleme, sahne dosyasına dokunma.
+4. Kontrol: `dotnet test` yeşil (598), `scripts/unity-check.ps1` 0. WebGL derleme bu aşamada gerekmez; orchestrator commit'ten sonra temiz ağaçtan derler.
+
+**Rapor (Aşama C):** aynı dosyaya "Aşama C" başlığıyla: değişen dosyalar, iki kontrolün sonuç satırları, sabitlerin adları ve değerleri, emin olmadıkların.
