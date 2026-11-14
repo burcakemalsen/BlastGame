@@ -9,6 +9,8 @@ namespace BlastGame.View
     {
         private const float TileSize = 0.9f;
 
+        private static Sprite _squareSprite; // created once, shared by every tile and every Build
+
         private Grid _grid;
         private SpriteRenderer[,] _tiles;
 
@@ -16,7 +18,8 @@ namespace BlastGame.View
         {
             _grid = grid;
             _tiles = new SpriteRenderer[grid.Width, grid.Height];
-            Sprite sprite = CreateSquareSprite();
+            if (_squareSprite == null) _squareSprite = CreateSquareSprite();
+            Sprite sprite = _squareSprite;
             for (int y = 0; y < grid.Height; y++)
             {
                 for (int x = 0; x < grid.Width; x++)

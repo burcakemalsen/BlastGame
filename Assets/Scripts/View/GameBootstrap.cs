@@ -6,7 +6,7 @@ namespace BlastGame.View
 {
     /// <summary>
     /// Creates itself after the scene loads, builds a seeded grid and draws it.
-    /// Turns taps into BlastRules.Blast calls; it owns no game rules.
+    /// Turns taps into TurnRules.Tap calls; it owns no game rules.
     /// </summary>
     public sealed class GameBootstrap : MonoBehaviour
     {
@@ -16,6 +16,7 @@ namespace BlastGame.View
         private const int Seed = 42;
 
         private Grid _grid;
+        private SeededRandom _random; // one source for the first grid and every refill
         private GridView _view;
         private Camera _camera;
 
@@ -28,7 +29,8 @@ namespace BlastGame.View
 
         private void Awake()
         {
-            _grid = GridFactory.CreateRandom(Width, Height, ColorCount, new SeededRandom(Seed));
+            _random = new SeededRandom(Seed);
+            _grid = GridFactory.CreateRandom(Width, Height, ColorCount, _random);
 
             var cam = Camera.main;
             if (cam == null)
@@ -70,7 +72,7 @@ namespace BlastGame.View
             int y = Mathf.RoundToInt(world.y);
             if (!_grid.IsInside(x, y)) return;
 
-            BlastRules.Blast(_grid, x, y);
+            TurnRules.Tap(_grid, x, y, ColorCount, _random);
             _view.Refresh();
         }
     }
