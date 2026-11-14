@@ -7,10 +7,20 @@ namespace BlastGame.Core
     public sealed class TurnEffect
     {
         private static readonly IReadOnlyList<ClearedCell> NoCells = new ClearedCell[0];
+        private static readonly IReadOnlyList<ObstacleHit> NoHits = new ObstacleHit[0];
 
         private readonly IReadOnlyList<ClearedCell> _cleared;
         private readonly int _mergedCount;
         private readonly IReadOnlyList<ClearedCell> _converted;
+        private readonly IReadOnlyList<ObstacleHit> _hits = NoHits;
+
+        /// <summary>Obstacle-aware constructor. Stores the lists as they are (no copy).</summary>
+        public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created,
+                          int triggeredBy, int mergedCount, IReadOnlyList<ClearedCell> converted,
+                          IReadOnlyList<ObstacleHit> hits)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>Combo-aware constructor. Stores the lists as they are (no copy).</summary>
         public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created,
@@ -67,6 +77,12 @@ namespace BlastGame.Core
         public IReadOnlyList<ClearedCell> Converted
         {
             get { return _converted; }
+        }
+
+        /// <summary>Pinata and Crate hits this effect made; y ascending, then x ascending.</summary>
+        public IReadOnlyList<ObstacleHit> Hits
+        {
+            get { return _hits; }
         }
     }
 }

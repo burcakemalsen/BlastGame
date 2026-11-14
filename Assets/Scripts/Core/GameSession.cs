@@ -10,6 +10,13 @@ namespace BlastGame.Core
         private readonly ColorGoal[] _goals;
         private readonly IReadOnlyList<ColorGoal> _goalsView; // read-only wrapper; a cast back to an array fails
         private readonly int[] _remaining; // same order as _goals
+        private readonly IReadOnlyList<ObstacleGoal> _obstacleGoals = Array.Empty<ObstacleGoal>();
+
+        public GameSession(Grid grid, int colorCount, int moves, IReadOnlyList<ColorGoal> goals,
+                           IReadOnlyList<ObstacleGoal> obstacleGoals, IRandomSource random)
+        {
+            throw new NotImplementedException();
+        }
 
         public GameSession(Grid grid, int colorCount, int moves, IReadOnlyList<ColorGoal> goals, IRandomSource random)
         {
@@ -74,6 +81,17 @@ namespace BlastGame.Core
                 if (_goals[i].Color == color)
                     return _remaining[i];
             throw new ArgumentException("Color " + color + " is not a goal.", nameof(color));
+        }
+
+        /// <summary>Initial obstacle goals, in the order given.</summary>
+        public IReadOnlyList<ObstacleGoal> ObstacleGoals
+        {
+            get { return _obstacleGoals; }
+        }
+
+        public int Remaining(ObstacleKind kind)
+        {
+            throw new NotImplementedException();
         }
 
         public TurnResult Tap(int x, int y)

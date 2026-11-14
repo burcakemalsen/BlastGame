@@ -7,6 +7,14 @@ namespace BlastGame.Core
     public sealed class LevelData
     {
         private readonly IReadOnlyList<ColorGoal> _goals;
+        private readonly IReadOnlyList<ObstaclePlacement> _obstacles = Array.Empty<ObstaclePlacement>();
+        private readonly IReadOnlyList<ObstacleGoal> _obstacleGoals = Array.Empty<ObstacleGoal>();
+
+        public LevelData(int width, int height, int colorCount, int moves, IReadOnlyList<ColorGoal> goals,
+                         IReadOnlyList<ObstaclePlacement> obstacles, IReadOnlyList<ObstacleGoal> obstacleGoals)
+        {
+            throw new NotImplementedException();
+        }
 
         public LevelData(int width, int height, int colorCount, int moves, IReadOnlyList<ColorGoal> goals)
         {
@@ -55,6 +63,16 @@ namespace BlastGame.Core
         public IReadOnlyList<ColorGoal> Goals
         {
             get { return _goals; }
+        }
+
+        public IReadOnlyList<ObstaclePlacement> Obstacles
+        {
+            get { return _obstacles; }
+        }
+
+        public IReadOnlyList<ObstacleGoal> ObstacleGoals
+        {
+            get { return _obstacleGoals; }
         }
 
         public GameSession CreateSession(IRandomSource random)

@@ -10,6 +10,7 @@ namespace BlastGame.Core
         private readonly IReadOnlyList<CellMove> _moves;
         private readonly IReadOnlyList<CellPos> _filled;
         private readonly IReadOnlyList<TurnEffect> _effects;
+        private readonly IReadOnlyList<CellMove> _collected = Array.Empty<CellMove>();
 
         /// <summary>Stores the given lists as they are (no copy).</summary>
         public TurnResult(IReadOnlyList<CellPos> blasted, IReadOnlyList<CellMove> moves, IReadOnlyList<CellPos> filled)
@@ -46,6 +47,13 @@ namespace BlastGame.Core
             _effects = effects;
         }
 
+        /// <summary>Stores the given lists as they are (no copy).</summary>
+        public TurnResult(IReadOnlyList<CellPos> blasted, IReadOnlyList<CellMove> moves, IReadOnlyList<CellPos> filled,
+                          IReadOnlyList<TurnEffect> effects, IReadOnlyList<CellMove> collected)
+        {
+            throw new NotImplementedException();
+        }
+
         public IReadOnlyList<CellPos> Blasted
         {
             get { return _blasted; }
@@ -65,6 +73,12 @@ namespace BlastGame.Core
         public IReadOnlyList<TurnEffect> Effects
         {
             get { return _effects; }
+        }
+
+        /// <summary>Collected Anchors: from -> (x, 0); x ascending, then From.Y ascending.</summary>
+        public IReadOnlyList<CellMove> Collected
+        {
+            get { return _collected; }
         }
 
         /// <summary>True when Blasted.Count > 0.</summary>

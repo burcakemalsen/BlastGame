@@ -5,6 +5,7 @@ namespace BlastGame.Core
     {
         Empty = 0,
         Color,
-        Special
+        Special,
+        Obstacle
     }
 }

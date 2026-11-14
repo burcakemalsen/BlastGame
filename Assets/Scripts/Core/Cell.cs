@@ -42,6 +42,12 @@ namespace BlastGame.Core
             return new Cell(CellKind.Special, color, SpecialKind.Orb);
         }
 
+        /// <summary>A Pinata, Crate or Anchor. WaterBalloon is a flag on a colored cell; see <see cref="WithBalloon"/>.</summary>
+        public static Cell OfObstacle(ObstacleKind kind, int layers)
+        {
+            throw new NotImplementedException();
+        }
+
         public CellKind Kind
         {
             get { return _kind; }
@@ -55,6 +61,32 @@ namespace BlastGame.Core
         public bool IsSpecial
         {
             get { return _kind == CellKind.Special; }
+        }
+
+        public bool IsObstacle
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public ObstacleKind Obstacle
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public int Layers
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        /// <summary>Readable on every cell; only a colored cell can carry a balloon.</summary>
+        public bool HasBalloon
+        {
+            get { return false; } // stub: no cell carries a balloon yet
+        }
+
+        public Cell WithBalloon(bool hasBalloon)
+        {
+            throw new NotImplementedException();
         }
 
         public SpecialKind Special

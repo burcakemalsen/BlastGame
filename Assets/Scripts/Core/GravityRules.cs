@@ -34,5 +34,11 @@ namespace BlastGame.Core
             }
             return moves;
         }
+
+        /// <summary>Gravity with Crate sections, then Anchor collection at the bottom of each column.</summary>
+        public static GravityResult Settle(Grid grid)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
