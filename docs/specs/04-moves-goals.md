@@ -32,7 +32,7 @@ Hiçbir şeye dokunmadan, bu sırayla; `ParamName` parametrenin adı:
 2. `colorCount` `1..GridFactory.MaxColorCount` dışı → `ArgumentOutOfRangeException`.
 3. `moves < 1` → `ArgumentOutOfRangeException`.
 4. `goals` `null` → `ArgumentNullException`; boş liste → `ArgumentException`.
-5. Bir hedefin rengi `colorCount`'tan büyük ya da eşit (oyunda o renk hiç çıkmaz) → `ArgumentException` (`goals`). Aynı renk iki kez → `ArgumentException` (`goals`).
+5. Bir hedefin rengi `colorCount`'tan büyük ya da eşit (oyunda o renk hiç çıkmaz) → `ArgumentException` (`goals`). Aynı renk iki kez → `ArgumentException` (`goals`). `Count < 1` olan hedef (kurucudan geçmemiş `default(ColorGoal)`) → `ArgumentException` (`goals`).
 6. `random` `null` → `ArgumentNullException`.
 
 ### `ColorGoal`
