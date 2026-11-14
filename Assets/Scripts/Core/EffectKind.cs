@@ -6,6 +6,12 @@ namespace BlastGame.Core
         Group,
         Rocket,
         Bomb,
-        Orb
+        Orb,
+        RocketCross,
+        RocketBomb,
+        BigBomb,
+        OrbRocket,
+        OrbBomb,
+        OrbOrb
     }
 }

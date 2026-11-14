@@ -165,14 +165,15 @@ namespace BlastGame.Core.Tests
         [Fact]
         public void Tap_RocketWithBombAboveItsRow_BombFallsNotTriggered()
         {
-            Grid grid = SpecialGrid.Parse("GXG", "BHR");
+            // Spec 06b: a bomb right above the rocket would now join it (combo), so it sits diagonally.
+            Grid grid = SpecialGrid.Parse("XGG", "BHR");
 
             TurnResult result = TurnRules.Tap(grid, 1, 0, 3, CountingRandom.Constant(2));
 
             SpecialGrid.AssertEffects(result.Effects, "Rocket 1,0 t=-1 c=. | 1,0H 0,0B 2,0R");
             AssertMoves(new[] { 0, 1, 0, 0, 1, 1, 1, 0, 2, 1, 2, 0 }, result.Moves);
             TestGrid.AssertGroup(TestGrid.Pts(0, 1, 1, 1, 2, 1), result.Filled);
-            SpecialGrid.AssertRows(new[] { "BBB", "GXG" }, grid);
+            SpecialGrid.AssertRows(new[] { "BBB", "XGG" }, grid);
         }
 
         [Fact]

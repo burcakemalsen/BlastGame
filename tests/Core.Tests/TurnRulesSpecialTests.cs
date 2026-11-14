@@ -61,23 +61,25 @@ namespace BlastGame.Core.Tests
             Assert.Equal(new[] { 3, 3, 3 }, random.MaxArgs);
         }
 
+        // Spec 06b: a bomb next to a rocket is now a combo (see TurnRulesComboTests), so the chain
+        // is checked with the rocket moved diagonally to (2,0): it is in the bomb's area but not a neighbour.
         [Fact]
-        public void Tap_Example3Chain_GravityAndRefillOnceAfterAllEffects()
+        public void Tap_ChainOfSeparatedItems_GravityAndRefillOnceAfterAllEffects()
         {
-            Grid grid = SpecialGrid.Parse(Example3);
+            Grid grid = SpecialGrid.Parse("RGBGR", "GXBBG", "BRHRB");
             var random = CountingRandom.Constant(0);
 
             TurnResult result = TurnRules.Tap(grid, 1, 1, 3, random);
 
             SpecialGrid.AssertEffects(result.Effects,
-                "Bomb 1,1 t=-1 c=. | 1,1X 0,0B 1,0R 2,0G 0,1G 0,2R 1,2G 2,2B",
-                "Rocket 2,1 t=0 c=. | 2,1H 3,1B 4,1G");
+                "Bomb 1,1 t=-1 c=. | 1,1X 0,0B 1,0R 0,1G 2,1B 0,2R 1,2G 2,2B",
+                "Rocket 2,0 t=0 c=. | 2,0H 3,0R 4,0B");
             TestGrid.AssertGroup(
-                TestGrid.Pts(1, 1, 0, 0, 1, 0, 2, 0, 0, 1, 0, 2, 1, 2, 2, 2, 2, 1, 3, 1, 4, 1), result.Blasted);
-            AssertMoves(new[] { 3, 2, 3, 1, 4, 2, 4, 1 }, result.Moves);
+                TestGrid.Pts(1, 1, 0, 0, 1, 0, 0, 1, 2, 1, 0, 2, 1, 2, 2, 2, 2, 0, 3, 0, 4, 0), result.Blasted);
+            AssertMoves(new[] { 3, 1, 3, 0, 3, 2, 3, 1, 4, 1, 4, 0, 4, 2, 4, 1 }, result.Moves);
             TestGrid.AssertGroup(
                 TestGrid.Pts(0, 0, 1, 0, 2, 0, 0, 1, 1, 1, 2, 1, 0, 2, 1, 2, 2, 2, 3, 2, 4, 2), result.Filled);
-            SpecialGrid.AssertRows(new[] { "RRRRR", "RRRGR", "RRRRB" }, grid);
+            SpecialGrid.AssertRows(new[] { "RRRRR", "RRRGR", "RRRBG" }, grid);
             Assert.Equal(Repeat(3, 11), random.MaxArgs);
         }
 

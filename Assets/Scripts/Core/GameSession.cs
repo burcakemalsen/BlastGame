@@ -93,19 +93,14 @@ namespace BlastGame.Core
 
             MovesLeft--;
 
-            // Count every cleared colored cell by its color; special items count for no color.
+            // Count every cleared or converted colored cell by its color; special items count for no color.
             foreach (TurnEffect effect in result.Effects)
+            {
                 foreach (ClearedCell c in effect.Cleared)
-                {
-                    if (c.Cell.Kind != CellKind.Color)
-                        continue;
-                    for (int i = 0; i < _goals.Length; i++)
-                        if (_goals[i].Color == c.Cell.Color)
-                        {
-                            _remaining[i] = Math.Max(0, _remaining[i] - 1);
-                            break;
-                        }
-                }
+                    CountColor(c.Cell);
+                foreach (ClearedCell c in effect.Converted)
+                    CountColor(c.Cell);
+            }
 
             if (AllGoalsDone())
                 Status = GameStatus.Won; // checked before losing: the last move may finish the goals
@@ -113,6 +108,18 @@ namespace BlastGame.Core
                 Status = GameStatus.Lost;
 
             return result;
+        }
+
+        private void CountColor(Cell cell)
+        {
+            if (cell.Kind != CellKind.Color)
+                return;
+            for (int i = 0; i < _goals.Length; i++)
+                if (_goals[i].Color == cell.Color)
+                {
+                    _remaining[i] = Math.Max(0, _remaining[i] - 1);
+                    return;
+                }
         }
 
         private bool AllGoalsDone()
