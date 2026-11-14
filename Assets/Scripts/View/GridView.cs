@@ -33,6 +33,16 @@ namespace BlastGame.View
         private const float OrbMaxStep = 0.035f;       // gap between beams; shorter when there are many
         private const float OrbTotal = 0.5f;
         private const float FallDuration = 0.35f;      // every falling tile, whatever the distance
+        private const float MergeDuration = 0.15f;     // combo participants slide onto the tapped cell
+        private const float MergeFlash = 0.12f;
+        private const float BigBombCellTime = 0.03f;   // the big wave crosses one ring of cells
+        private const float BigBombWave = 0.3f;
+        private const float BigBombShake = 0.25f;
+        private const float BigBombShakeAmount = 0.16f;
+        private const float ClearAllSweep = 0.28f;     // the whole-board wave, center to corner
+        private const float ClearAllWave = 0.4f;
+        private const float ConvertPop = 0.1f;         // a converted tile pops into its new item
+        private const float ConvertStagger = 0.02f;    // converted items go off almost together
 
         // Sorting order: tiles under their decoration, effects above both.
         private const int TileOrder = 0;
@@ -43,7 +53,7 @@ namespace BlastGame.View
         private const int WaveOrder = 5;
         private const int FlashOrder = 6;
 
-        private enum TileAnim { None, Shrink, Collect, FlashOut, Hide, OrbSelf }
+        private enum TileAnim { None, Shrink, Collect, FlashOut, Hide, OrbSelf, MergeCenter }
 
         private enum FxKind { RocketHalf, RocketTrail, BombFlash, BombWave, Beam, Shake }
 
@@ -65,6 +75,15 @@ namespace BlastGame.View
             public Vector3 To;
             public Color Color;
             public SpriteRenderer Renderer; // null for Shake
+            public float Size;              // flash/wave: end scale; shake: amount
+        }
+
+        // A tile that takes a new look mid-timeline (a colored cell turned into an item, the Orb of a combo).
+        private struct Look
+        {
+            public CellPos Pos;
+            public Cell Cell;
+            public float Start;
         }
 
         private Grid _grid;
@@ -76,6 +95,7 @@ namespace BlastGame.View
         private int[] _newInColumn;         // reused by every turn
         private float[] _effectStart = new float[8]; // grows when a chain is longer
         private readonly List<Fx> _fx = new List<Fx>();
+        private readonly List<Look> _looks = new List<Look>();
         private readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         private int _poolUsed;
         private bool _hasPop;
@@ -223,6 +243,7 @@ namespace BlastGame.View
                 for (int x = 0; x < _grid.Width; x++)
                     _steps[x, y].Anim = TileAnim.None;
             _fx.Clear();
+            _looks.Clear();
             _hasPop = false;
 
             IReadOnlyList<TurnEffect> effects = result.Effects;
@@ -252,6 +273,12 @@ namespace BlastGame.View
                     case EffectKind.Rocket: done = PlanRocket(e, start); break;
                     case EffectKind.Bomb: done = PlanBomb(e, start); break;
                     case EffectKind.Orb: done = PlanOrb(e, start); break;
+                    case EffectKind.RocketCross:
+                    case EffectKind.RocketBomb: done = PlanRocketCombo(e, start); break;
+                    case EffectKind.BigBomb: done = PlanBigBomb(e, start); break;
+                    case EffectKind.OrbRocket:
+                    case EffectKind.OrbBomb: done = PlanConvert(e, start, effects); break;
+                    case EffectKind.OrbOrb: done = PlanClearAll(e, start); break;
                     default: done = PlanGroup(e, start); break;
                 }
                 end = Mathf.Max(end, done);
@@ -262,12 +289,30 @@ namespace BlastGame.View
         /// <summary>Time from the start of an effect until it reaches a cell (when a chained item there fires).</summary>
         private static float ReachTime(TurnEffect effect, CellPos cell)
         {
-            if (effect.Kind == EffectKind.Rocket)
+            CellPos o = effect.Origin;
+            switch (effect.Kind)
             {
-                int d = Mathf.Abs(cell.X - effect.Origin.X) + Mathf.Abs(cell.Y - effect.Origin.Y);
-                return d * RocketCellTime;
+                case EffectKind.Rocket:
+                    return (Mathf.Abs(cell.X - o.X) + Mathf.Abs(cell.Y - o.Y)) * RocketCellTime;
+                case EffectKind.RocketCross:
+                    return MergeDuration + CrossDistance(o, cell, 0) * RocketCellTime;
+                case EffectKind.RocketBomb:
+                    return MergeDuration + CrossDistance(o, cell, 1) * RocketCellTime;
+                case EffectKind.BigBomb:
+                    return MergeDuration + Ring(o, cell) * BigBombCellTime;
+                case EffectKind.OrbRocket:
+                case EffectKind.OrbBomb:
+                {
+                    // Converted items go off, in queue order, once every conversion is done.
+                    IReadOnlyList<ClearedCell> conv = effect.Converted;
+                    int index = 0;
+                    for (int i = 0; i < conv.Count; i++)
+                        if (conv[i].Pos == cell) { index = i; break; }
+                    return MergeDuration + ConvertTime(conv.Count) + index * ConvertStagger;
+                }
+                default:
+                    return 0f; // a Bomb sets things off the moment it explodes; Orbs and groups never chain
             }
-            return 0f; // a Bomb sets things off the moment it explodes; Orbs and groups never chain
         }
 
         private float PlanGroup(TurnEffect e, float start)
@@ -306,15 +351,20 @@ namespace BlastGame.View
                 SetStep(c.Pos, TileAnim.Shrink, start + d * RocketCellTime, RocketTileVanish);
             }
 
-            // Two halves fly apart until they leave the board (the mask hides them there).
+            return AddRocketPair(o.X, o.Y, vertical, start);
+        }
+
+        /// <summary>Two rocket halves fly apart from (x, y) until they leave the board (the mask hides them there).</summary>
+        private float AddRocketPair(int x, int y, bool vertical, float start)
+        {
             int span = vertical ? _grid.Height : _grid.Width;
-            int pos = vertical ? o.Y : o.X;
+            int pos = vertical ? y : x;
             float end = start;
             for (int side = -1; side <= 1; side += 2)
             {
                 int toEdge = side < 0 ? pos + 1 : span - pos; // cells until just past the edge
                 float flight = toEdge * RocketCellTime;
-                Vector3 from = CellPosition(o.X, o.Y);
+                Vector3 from = CellPosition(x, y);
                 Vector3 dir = vertical ? new Vector3(0f, side, 0f) : new Vector3(side, 0f, 0f);
                 Vector3 to = from + dir * (toEdge + TrailLength);
                 float flightWithTrail = flight + TrailLength * RocketCellTime; // the trail also leaves
@@ -336,9 +386,9 @@ namespace BlastGame.View
                 bool self = c.Pos == o;
                 SetStep(c.Pos, TileAnim.Shrink, start + (self ? 0f : 0.02f), self ? 0.05f : BombTileVanish);
             }
-            AddFx(FxKind.BombFlash, start, BombFlash, at, at, TileColors.Flash, FlashOrder, ShapeSprites.Disc);
-            AddFx(FxKind.BombWave, start, BombWave, at, at, TileColors.Wave, WaveOrder, ShapeSprites.Ring);
-            _fx.Add(new Fx { Kind = FxKind.Shake, Start = start, Duration = BombShake });
+            AddFx(FxKind.BombFlash, start, BombFlash, at, at, TileColors.Flash, FlashOrder, ShapeSprites.Disc, 1.7f);
+            AddFx(FxKind.BombWave, start, BombWave, at, at, TileColors.Wave, WaveOrder, ShapeSprites.Ring, 3.4f);
+            _fx.Add(new Fx { Kind = FxKind.Shake, Start = start, Duration = BombShake, Size = BombShakeAmount });
             return start + Mathf.Max(BombWave, BombShake);
         }
 
@@ -364,6 +414,160 @@ namespace BlastGame.View
             return end;
         }
 
+        // ---------- Combos ----------
+
+        /// <summary>
+        /// The participants (the first MergedCount cleared cells) slide onto the tapped cell, then a short flash.
+        /// Returns when the combo itself fires.
+        /// </summary>
+        private float PlanMerge(TurnEffect e, float start, bool keepOrigin)
+        {
+            CellPos o = e.Origin;
+            Vector3 at = CellPosition(o.X, o.Y);
+            for (int i = 1; i < e.MergedCount; i++)
+            {
+                CellPos p = e.Cleared[i].Pos;
+                SetStep(p, TileAnim.Collect, start, MergeDuration);
+                _steps[p.X, p.Y].Target = at;
+            }
+            if (!keepOrigin)
+                SetStep(o, TileAnim.MergeCenter, start, MergeDuration);
+            float fire = start + MergeDuration;
+            AddFx(FxKind.BombFlash, fire, MergeFlash, at, at, TileColors.Flash, FlashOrder, ShapeSprites.Disc, 1.4f);
+            return fire;
+        }
+
+        private float PlanRocketCombo(TurnEffect e, float start)
+        {
+            float fire = PlanMerge(e, start, false);
+            CellPos o = e.Origin;
+            int half = e.Kind == EffectKind.RocketBomb ? 1 : 0;
+            for (int i = e.MergedCount; i < e.Cleared.Count; i++)
+            {
+                CellPos p = e.Cleared[i].Pos;
+                SetStep(p, TileAnim.Shrink, fire + CrossDistance(o, p, half) * RocketCellTime, RocketTileVanish);
+            }
+
+            // One horizontal pair per row of the band and one vertical pair per column, all at once.
+            float end = fire;
+            for (int d = -half; d <= half; d++)
+            {
+                if (o.Y + d >= 0 && o.Y + d < _grid.Height)
+                    end = Mathf.Max(end, AddRocketPair(o.X, o.Y + d, false, fire));
+                if (o.X + d >= 0 && o.X + d < _grid.Width)
+                    end = Mathf.Max(end, AddRocketPair(o.X + d, o.Y, true, fire));
+            }
+            return end;
+        }
+
+        private float PlanBigBomb(TurnEffect e, float start)
+        {
+            float fire = PlanMerge(e, start, false);
+            CellPos o = e.Origin;
+            Vector3 at = CellPosition(o.X, o.Y);
+            float end = fire;
+            for (int i = e.MergedCount; i < e.Cleared.Count; i++)
+            {
+                CellPos p = e.Cleared[i].Pos;
+                float t = fire + 0.02f + Ring(o, p) * BigBombCellTime;
+                SetStep(p, TileAnim.Shrink, t, BombTileVanish);
+                end = Mathf.Max(end, t + BombTileVanish);
+            }
+            AddFx(FxKind.BombFlash, fire, BombFlash * 1.5f, at, at, TileColors.Flash, FlashOrder, ShapeSprites.Disc, 4f);
+            AddFx(FxKind.BombWave, fire, BigBombWave, at, at, TileColors.Wave, WaveOrder, ShapeSprites.Ring, 8.5f);
+            _fx.Add(new Fx { Kind = FxKind.Shake, Start = fire, Duration = BigBombShake, Size = BigBombShakeAmount });
+            return Mathf.Max(end, fire + Mathf.Max(BigBombWave, BigBombShake));
+        }
+
+        private float PlanClearAll(TurnEffect e, float start)
+        {
+            float fire = PlanMerge(e, start, false);
+            CellPos o = e.Origin;
+            Vector3 at = CellPosition(o.X, o.Y);
+            Vector3 center = new Vector3((_grid.Width - 1) * 0.5f, (_grid.Height - 1) * 0.5f, 0f);
+            float far = Mathf.Max(0.001f, center.magnitude); // center to a corner
+            float end = fire;
+            for (int i = e.MergedCount; i < e.Cleared.Count; i++)
+            {
+                CellPos p = e.Cleared[i].Pos;
+                float d = Vector3.Distance(CellPosition(p.X, p.Y), center) / far;
+                float t = fire + d * ClearAllSweep;
+                SetStep(p, TileAnim.Shrink, t, BombTileVanish);
+                end = Mathf.Max(end, t + BombTileVanish);
+            }
+            float size = Mathf.Max(_grid.Width, _grid.Height) * 2.2f;
+            AddFx(FxKind.BombFlash, fire, BombFlash * 2f, at, at, TileColors.Flash, FlashOrder, ShapeSprites.Disc, 5f);
+            AddFx(FxKind.BombWave, fire, ClearAllWave, center, center, TileColors.Wave, WaveOrder, ShapeSprites.Ring, size);
+            _fx.Add(new Fx { Kind = FxKind.Shake, Start = fire, Duration = BigBombShake, Size = BombShakeAmount });
+            return Mathf.Max(end, fire + ClearAllWave);
+        }
+
+        /// <summary>OrbRocket / OrbBomb: beams from the Orb turn each target into its new item; the items' own effects follow.</summary>
+        private float PlanConvert(TurnEffect e, float start, IReadOnlyList<TurnEffect> effects)
+        {
+            float fire = PlanMerge(e, start, true);
+            CellPos o = e.Origin;
+            Vector3 from = CellPosition(o.X, o.Y);
+
+            // The tapped cell shows the Orb (it may have been the Rocket or Bomb) and pulses while the beams go out.
+            Cell orb = e.Cleared[0].Cell;
+            for (int i = 0; i < e.MergedCount; i++)
+                if (e.Cleared[i].Cell.Special == SpecialKind.Orb) orb = e.Cleared[i].Cell;
+            _looks.Add(new Look { Pos = o, Cell = orb, Start = start });
+
+            IReadOnlyList<ClearedCell> conv = e.Converted;
+            float step = BeamStep(conv.Count);
+            Color beam = Color.Lerp(TileColors.ToColor(orb.OrbColor), Color.white, 0.55f);
+            for (int i = 0; i < conv.Count; i++)
+            {
+                CellPos p = conv[i].Pos;
+                float t = fire + OrbPulse + i * step;
+                AddFx(FxKind.Beam, t, OrbBeam, from, CellPosition(p.X, p.Y), beam, BeamOrder, ShapeSprites.Square);
+                _looks.Add(new Look { Pos = p, Cell = ConvertedItem(e, p, effects), Start = t + OrbBeam * 0.6f });
+            }
+
+            float end = fire + ConvertTime(conv.Count);
+            SetStep(o, TileAnim.OrbSelf, start, end - start);
+            return end;
+        }
+
+        /// <summary>The item a converted cell became: the first cell its own (queued) effect cleared.</summary>
+        private static Cell ConvertedItem(TurnEffect combo, CellPos p, IReadOnlyList<TurnEffect> effects)
+        {
+            for (int i = 1; i < effects.Count; i++)
+                if (effects[i].TriggeredBy == 0 && effects[i].Origin == p)
+                    return effects[i].Cleared[0].Cell;
+            return combo.Kind == EffectKind.OrbBomb
+                ? Cell.OfSpecial(SpecialKind.Bomb)
+                : Cell.OfSpecial(SpecialKind.RocketHorizontal);
+        }
+
+        private static float BeamStep(int targets)
+        {
+            return targets > 1 ? Mathf.Min(OrbMaxStep, (OrbTotal - OrbPulse - OrbBeam) / (targets - 1)) : 0f;
+        }
+
+        /// <summary>From the combo firing until the last beam has hit.</summary>
+        private static float ConvertTime(int targets)
+        {
+            return OrbPulse + Mathf.Max(0, targets - 1) * BeamStep(targets) + OrbBeam;
+        }
+
+        /// <summary>Cells a band rocket travels to reach p: rows o.Y +- half fly sideways, columns o.X +- half fly up/down.</summary>
+        private static int CrossDistance(CellPos o, CellPos p, int half)
+        {
+            int dx = Mathf.Abs(p.X - o.X), dy = Mathf.Abs(p.Y - o.Y);
+            int best = int.MaxValue;
+            if (dy <= half) best = dx;
+            if (dx <= half) best = Mathf.Min(best, dy);
+            return best == int.MaxValue ? dx + dy : best;
+        }
+
+        private static int Ring(CellPos o, CellPos p)
+        {
+            return Mathf.Max(Mathf.Abs(p.X - o.X), Mathf.Abs(p.Y - o.Y));
+        }
+
         private void SetStep(CellPos p, TileAnim anim, float start, float duration)
         {
             _steps[p.X, p.Y] = new TileStep
@@ -377,19 +581,30 @@ namespace BlastGame.View
         }
 
         private void AddFx(FxKind kind, float start, float duration, Vector3 from, Vector3 to, Color color,
-                           int order, Sprite sprite)
+                           int order, Sprite sprite, float size = 1f)
         {
             SpriteRenderer sr = TakeFromPool();
             sr.sprite = sprite;
             sr.sortingOrder = order;
             sr.enabled = false; // shown when its start time comes
-            _fx.Add(new Fx { Kind = kind, Start = start, Duration = duration, From = from, To = to, Color = color, Renderer = sr });
+            _fx.Add(new Fx { Kind = kind, Start = start, Duration = duration, From = from, To = to, Color = color, Renderer = sr, Size = size });
         }
 
         // ---------- Playing: everything at time t. ----------
 
         private void ApplyTimeline(float t)
         {
+            // New looks first; a tile's own step (which starts later) then takes over its scale.
+            for (int i = 0; i < _looks.Count; i++)
+            {
+                Look look = _looks[i];
+                if (t < look.Start) continue;
+                if (_shown[look.Pos.X, look.Pos.Y] != look.Cell)
+                    ShowCell(look.Pos.X, look.Pos.Y, look.Cell);
+                float k = Mathf.Clamp01((t - look.Start) / ConvertPop);
+                SetScale(_tiles[look.Pos.X, look.Pos.Y].transform, TileSize * (1f + 0.2f * Mathf.Sin(Mathf.PI * k)));
+            }
+
             for (int y = 0; y < _grid.Height; y++)
                 for (int x = 0; x < _grid.Width; x++)
                     if (_steps[x, y].Anim != TileAnim.None)
@@ -416,7 +631,7 @@ namespace BlastGame.View
                 {
                     if (k >= 0f && k < 1f)
                     {
-                        float a = BombShakeAmount * (1f - k);
+                        float a = fx.Size * (1f - k);
                         shake += new Vector3(Mathf.Sin(t * 95f) * a, Mathf.Cos(t * 83f) * a, 0f);
                     }
                     continue;
@@ -461,6 +676,10 @@ namespace BlastGame.View
                     else size = 1f - EaseIn((k - 0.8f) / 0.2f);
                     SetScale(tile, TileSize * size);
                     break;
+                case TileAnim.MergeCenter:
+                    // Swells while the others land on it, then gives way to the combo.
+                    SetScale(tile, k >= 1f ? 0f : TileSize * (1f + 0.25f * Mathf.Sin(Mathf.PI * k)));
+                    break;
             }
         }
 
@@ -499,14 +718,14 @@ namespace BlastGame.View
                 case FxKind.BombFlash:
                     tr.localPosition = fx.From;
                     tr.localRotation = Quaternion.identity;
-                    SetScale(tr, Mathf.Lerp(0.5f, 1.7f, EaseOut(k)));
+                    SetScale(tr, Mathf.Lerp(0.5f, fx.Size, EaseOut(k)));
                     c.a = 0.9f * (1f - k);
                     fx.Renderer.color = c;
                     break;
                 case FxKind.BombWave:
                     tr.localPosition = fx.From;
                     tr.localRotation = Quaternion.identity;
-                    SetScale(tr, Mathf.Lerp(0.6f, 3.4f, EaseOut(k)));
+                    SetScale(tr, Mathf.Lerp(0.6f, fx.Size, EaseOut(k)));
                     c.a = 1f - EaseIn(k);
                     fx.Renderer.color = c;
                     break;
