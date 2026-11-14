@@ -28,7 +28,7 @@ Sabit mimari kuralları:
 
 ## 4. Roller ve adım kapısı
 
-Orchestrator yalnız beyindir: iş üretmez, yaptırır ve denetler.
+Orchestrator yalnız beyindir: iş üretmez, yaptırır ve denetler. Her adım yeni bir orchestrator oturumuyla başlar; önceki oturum adımı kapatıp durum dosyasını günceller (uzun konuşma her mesajda yeniden okunduğu için en büyük token harcaması budur).
 
 | Rol | Model | Ne yapar |
 |---|---|---|
@@ -36,9 +36,9 @@ Orchestrator yalnız beyindir: iş üretmez, yaptırır ve denetler.
 | Orchestrator | Opus 5.5 (ana oturum) | Spec ve görev tarifi yazar, ajanları başlatır, rapor ve diff okur, geri yollar, ürün sahibine anlatır, push öncesi taramayı ve push'u yapar |
 | Kurulumcu | Sonnet 5.5 medium | Adım 0'ı yapar |
 | Kodcu | Adıma göre Sonnet 5.5 medium ya da Opus 5.5 | Stub'ları ve uygulamayı yazar |
-| Testçi | Yeni adım: Opus 5.5 medium; küçük ek (1-3 net davranış): Sonnet 5.5 medium | Spec ve stub imzalarından, kodu kırmaya çalışan testler yazar |
+| Testçi | Basit adım (1, 2, 4, 5, 9) ve küçük ek: Sonnet 5.5 medium; zor adım (3, 6, 7, 8): Opus 5.5 medium | Spec ve stub imzalarından, kodu kırmaya çalışan testler yazar |
 | Kontrolcü 1 | Sonnet 5.5 | Açık arar, bilerek bozma dener, rapor yazar |
-| Kontrolcü 2 | Gemini 4 Argon (`agy`) | Kodu spec'le karşılaştırır, kaçan uç durumu arar; farklı model ailesi. Kotası biterse bu kontrol atlanır ve rapora not düşülür |
+| Kontrolcü 2 | Gemini 4 Argon (`agy`), yalnız zor adımlarda (3, 6, 7, 8) | Kodu spec'le karşılaştırır, kaçan uç durumu arar; farklı model ailesi. Kotası biterse ya da `agy` çalışmazsa atlanır ve rapora not düşülür |
 
 Kodcu modeli:
 
@@ -60,7 +60,7 @@ Biri geçmeden sonrakine geçilmez:
 2. **Stub:** Kodcu sözleşmedeki sınıfları içi boş yazar (stub: kapı numarası asılmış ama içi boş oda; çağrılınca "henüz yazılmadı" hatası verir). Orchestrator sözleşmeyle karşılaştırır.
 3. **Testler:** Testçi yazar. Çalıştırılır, **kırmızı** olmalı. Derleniyor ama hepsi geçiyorsa test bir şey ölçmüyordur, durulur.
 4. **Kod:** Kodcu yazar, tüm testler **yeşil**. `tests/` klasörüne dokunmaz. Orchestrator diff'i okur.
-5. **Bağımsız kontrol:** İki kontrolcü paralel. Raporlar `reports/NN-ad-claude.md` ve `reports/NN-ad-gemini.md`. Bulgu kod hatasıysa kodcuya, eksik testse testçiye gider; sonra tekrar kontrol.
+5. **Bağımsız kontrol:** Claude kontrolcü her adımda; Gemini yalnız zor adımlarda (3, 6, 7, 8), Claude'la paralel. Raporlar `reports/NN-ad-claude.md` ve `reports/NN-ad-gemini.md`. Bulgu kod hatasıysa kodcuya, eksik testse testçiye gider; sonra tekrar kontrol.
 6. **Ürün sahibi:** Editor'de ve telefonda oynar, orchestrator kodu anlatır. Telefon denemesi için orchestrator, kontrol kapısı geçince adımın dalından WebGL derler ve taramadan sonra `gh-pages`'e yayımlar (önizleme; `main`'e merge'den önce).
 7. **Push, PR, merge:** push öncesi taramadan sonra; ayrıntı bölüm 9. Kapı 6'dan sonra kod değiştiyse WebGL yeniden yayımlanır.
 
