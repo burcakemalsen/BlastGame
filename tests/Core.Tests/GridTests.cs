@@ -12,37 +12,37 @@ namespace BlastGame.Core.Tests
         [InlineData(-1)]
         [InlineData(int.MaxValue)]
         [InlineData(int.MinValue)]
-        public void Set_UndefinedColor_ThrowsArgumentOutOfRange(int value)
+        public void OfColor_UndefinedColor_ThrowsArgumentOutOfRange(int value)
         {
             var grid = new Grid(3, 2);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(1, 1, (TileColor)value));
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(1, 1, Cell.OfColor((TileColor)value)));
         }
 
         [Fact]
-        public void Set_UndefinedColor_LeavesCellUnchanged()
+        public void OfColor_UndefinedColor_LeavesGridCellUnchanged()
         {
             var grid = new Grid(3, 2);
-            grid.Set(1, 1, TileColor.Blue);
+            grid.Set(1, 1, Cell.OfColor(TileColor.Blue));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(1, 1, (TileColor)99));
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(1, 1, Cell.OfColor((TileColor)99)));
 
-            Assert.Equal(TileColor.Blue, grid.Get(1, 1));
+            Assert.Equal(Cell.OfColor(TileColor.Blue), grid.Get(1, 1));
         }
 
         [Fact]
-        public void Set_EachDefinedColorAndNull_StillAccepted()
+        public void Set_EachDefinedColorAndEmpty_StillAccepted()
         {
             var grid = new Grid(3, 2);
 
             foreach (TileColor color in Enum.GetValues(typeof(TileColor)))
             {
-                grid.Set(0, 0, color);
-                Assert.Equal(color, grid.Get(0, 0));
+                grid.Set(0, 0, Cell.OfColor(color));
+                Assert.Equal(Cell.OfColor(color), grid.Get(0, 0));
             }
 
-            grid.Set(0, 0, null);
-            Assert.Null(grid.Get(0, 0));
+            grid.Set(0, 0, Cell.Empty);
+            Assert.Equal(Cell.Empty, grid.Get(0, 0));
         }
 
         // ---- Constants ----
@@ -119,7 +119,7 @@ namespace BlastGame.Core.Tests
             {
                 for (int x = 0; x < 3; x++)
                 {
-                    Assert.Null(grid.Get(x, y));
+                    Assert.Equal(Cell.Empty, grid.Get(x, y));
                 }
             }
         }
@@ -276,7 +276,7 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(3, 2);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(x, y, TileColor.Red));
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(x, y, Cell.OfColor(TileColor.Red)));
         }
 
         [Theory]
@@ -284,11 +284,11 @@ namespace BlastGame.Core.Tests
         [InlineData(-1, 0)]
         [InlineData(0, 2)]
         [InlineData(0, -1)]
-        public void Set_NullOutside3x2_ThrowsArgumentOutOfRange(int x, int y)
+        public void Set_EmptyOutside3x2_ThrowsArgumentOutOfRange(int x, int y)
         {
             var grid = new Grid(3, 2);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(x, y, null));
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(x, y, Cell.Empty));
         }
 
         [Fact]
@@ -320,9 +320,9 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(5, 2);
 
-            Assert.Null(grid.Get(4, 0));
+            Assert.Equal(Cell.Empty, grid.Get(4, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => grid.Get(0, 4));
-            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(0, 4, TileColor.Red));
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(0, 4, Cell.OfColor(TileColor.Red)));
         }
 
         [Fact]
@@ -330,9 +330,9 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(2, 5);
 
-            Assert.Null(grid.Get(0, 4));
+            Assert.Equal(Cell.Empty, grid.Get(0, 4));
             Assert.Throws<ArgumentOutOfRangeException>(() => grid.Get(4, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(4, 0, TileColor.Red));
+            Assert.Throws<ArgumentOutOfRangeException>(() => grid.Set(4, 0, Cell.OfColor(TileColor.Red)));
         }
 
         // ---- Set / Get round trip ----
@@ -342,9 +342,9 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(3, 2);
 
-            grid.Set(2, 1, TileColor.Blue);
+            grid.Set(2, 1, Cell.OfColor(TileColor.Blue));
 
-            Assert.Equal(TileColor.Blue, grid.Get(2, 1));
+            Assert.Equal(Cell.OfColor(TileColor.Blue), grid.Get(2, 1));
         }
 
         [Fact]
@@ -352,7 +352,7 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(3, 2);
 
-            grid.Set(2, 1, TileColor.Blue);
+            grid.Set(2, 1, Cell.OfColor(TileColor.Blue));
 
             for (int y = 0; y < 2; y++)
             {
@@ -363,45 +363,45 @@ namespace BlastGame.Core.Tests
                         continue;
                     }
 
-                    Assert.Null(grid.Get(x, y));
+                    Assert.Equal(Cell.Empty, grid.Get(x, y));
                 }
             }
         }
 
         [Fact]
-        public void Set_Null_ClearsCell()
+        public void Set_Empty_ClearsCell()
         {
             var grid = new Grid(3, 2);
-            grid.Set(2, 1, TileColor.Blue);
+            grid.Set(2, 1, Cell.OfColor(TileColor.Blue));
 
-            grid.Set(2, 1, null);
+            grid.Set(2, 1, Cell.Empty);
 
-            Assert.Null(grid.Get(2, 1));
+            Assert.Equal(Cell.Empty, grid.Get(2, 1));
         }
 
         [Fact]
-        public void Set_NullOnEmptyCell_StaysEmpty()
+        public void Set_EmptyOnEmptyCell_StaysEmpty()
         {
             var grid = new Grid(3, 2);
 
-            grid.Set(1, 1, null);
+            grid.Set(1, 1, Cell.Empty);
 
             AssertAllEmpty(grid, 3, 2);
         }
 
         [Fact]
-        public void Set_Null_OtherCellsKeepTheirColors()
+        public void Set_Empty_OtherCellsKeepTheirColors()
         {
             var grid = new Grid(3, 2);
-            grid.Set(0, 0, TileColor.Red);
-            grid.Set(1, 0, TileColor.Green);
-            grid.Set(2, 1, TileColor.Blue);
+            grid.Set(0, 0, Cell.OfColor(TileColor.Red));
+            grid.Set(1, 0, Cell.OfColor(TileColor.Green));
+            grid.Set(2, 1, Cell.OfColor(TileColor.Blue));
 
-            grid.Set(1, 0, null);
+            grid.Set(1, 0, Cell.Empty);
 
-            Assert.Equal(TileColor.Red, grid.Get(0, 0));
-            Assert.Null(grid.Get(1, 0));
-            Assert.Equal(TileColor.Blue, grid.Get(2, 1));
+            Assert.Equal(Cell.OfColor(TileColor.Red), grid.Get(0, 0));
+            Assert.Equal(Cell.Empty, grid.Get(1, 0));
+            Assert.Equal(Cell.OfColor(TileColor.Blue), grid.Get(2, 1));
         }
 
         [Fact]
@@ -409,22 +409,22 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(3, 2);
 
-            grid.Set(1, 0, TileColor.Red);
-            grid.Set(1, 0, TileColor.Orange);
+            grid.Set(1, 0, Cell.OfColor(TileColor.Red));
+            grid.Set(1, 0, Cell.OfColor(TileColor.Orange));
 
-            Assert.Equal(TileColor.Orange, grid.Get(1, 0));
+            Assert.Equal(Cell.OfColor(TileColor.Orange), grid.Get(1, 0));
         }
 
         [Fact]
-        public void Set_ColorThenNullThenColor_ReturnsLastColor()
+        public void Set_ColorThenEmptyThenColor_ReturnsLastColor()
         {
             var grid = new Grid(3, 2);
 
-            grid.Set(0, 1, TileColor.Yellow);
-            grid.Set(0, 1, null);
-            grid.Set(0, 1, TileColor.Purple);
+            grid.Set(0, 1, Cell.OfColor(TileColor.Yellow));
+            grid.Set(0, 1, Cell.Empty);
+            grid.Set(0, 1, Cell.OfColor(TileColor.Purple));
 
-            Assert.Equal(TileColor.Purple, grid.Get(0, 1));
+            Assert.Equal(Cell.OfColor(TileColor.Purple), grid.Get(0, 1));
         }
 
         [Theory]
@@ -438,9 +438,9 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(3, 2);
 
-            grid.Set(1, 1, color);
+            grid.Set(1, 1, Cell.OfColor(color));
 
-            Assert.Equal(color, grid.Get(1, 1));
+            Assert.Equal(Cell.OfColor(color), grid.Get(1, 1));
         }
 
         [Fact]
@@ -448,9 +448,9 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(1, 1);
 
-            grid.Set(0, 0, TileColor.Green);
+            grid.Set(0, 0, Cell.OfColor(TileColor.Green));
 
-            Assert.Equal(TileColor.Green, grid.Get(0, 0));
+            Assert.Equal(Cell.OfColor(TileColor.Green), grid.Get(0, 0));
         }
 
         [Theory]
@@ -468,16 +468,16 @@ namespace BlastGame.Core.Tests
             // Write the corners in an order where a later write could overwrite
             // an earlier one if two corners alias (e.g. on 1-wide or 1-tall grids
             // two "corners" are the same cell, so expected values are computed below).
-            grid.Set(0, 0, TileColor.Red);
-            grid.Set(right, 0, TileColor.Green);
-            grid.Set(0, top, TileColor.Blue);
-            grid.Set(right, top, TileColor.Yellow);
+            grid.Set(0, 0, Cell.OfColor(TileColor.Red));
+            grid.Set(right, 0, Cell.OfColor(TileColor.Green));
+            grid.Set(0, top, Cell.OfColor(TileColor.Blue));
+            grid.Set(right, top, Cell.OfColor(TileColor.Yellow));
 
-            var expected = new TileColor?[width, height];
-            expected[0, 0] = TileColor.Red;
-            expected[right, 0] = TileColor.Green;
-            expected[0, top] = TileColor.Blue;
-            expected[right, top] = TileColor.Yellow;
+            var expected = new Cell[width, height];
+            expected[0, 0] = Cell.OfColor(TileColor.Red);
+            expected[right, 0] = Cell.OfColor(TileColor.Green);
+            expected[0, top] = Cell.OfColor(TileColor.Blue);
+            expected[right, top] = Cell.OfColor(TileColor.Yellow);
 
             for (int y = 0; y < height; y++)
             {
@@ -520,10 +520,10 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(5, 2);
 
-            grid.Set(1, 0, TileColor.Green);
+            grid.Set(1, 0, Cell.OfColor(TileColor.Green));
 
-            Assert.Equal(TileColor.Green, grid.Get(1, 0));
-            Assert.Null(grid.Get(0, 1));
+            Assert.Equal(Cell.OfColor(TileColor.Green), grid.Get(1, 0));
+            Assert.Equal(Cell.Empty, grid.Get(0, 1));
         }
 
         [Fact]
@@ -531,10 +531,10 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(2, 5);
 
-            grid.Set(0, 1, TileColor.Purple);
+            grid.Set(0, 1, Cell.OfColor(TileColor.Purple));
 
-            Assert.Equal(TileColor.Purple, grid.Get(0, 1));
-            Assert.Null(grid.Get(1, 0));
+            Assert.Equal(Cell.OfColor(TileColor.Purple), grid.Get(0, 1));
+            Assert.Equal(Cell.Empty, grid.Get(1, 0));
         }
 
         [Fact]
@@ -542,8 +542,8 @@ namespace BlastGame.Core.Tests
         {
             var grid = new Grid(4, 3);
 
-            grid.Set(3, 2, TileColor.Red);
-            grid.Set(0, 0, null);
+            grid.Set(3, 2, Cell.OfColor(TileColor.Red));
+            grid.Set(0, 0, Cell.Empty);
 
             Assert.Equal(4, grid.Width);
             Assert.Equal(3, grid.Height);
@@ -555,19 +555,19 @@ namespace BlastGame.Core.Tests
             var a = new Grid(3, 2);
             var b = new Grid(3, 2);
 
-            a.Set(0, 0, TileColor.Red);
+            a.Set(0, 0, Cell.OfColor(TileColor.Red));
 
-            Assert.Null(b.Get(0, 0));
+            Assert.Equal(Cell.Empty, b.Get(0, 0));
         }
 
         // ---- Helpers ----
 
         // Distinct-looking pattern where swapping x and y or using the wrong
         // row stride gives a different color for most cells.
-        private static TileColor? PatternColor(int x, int y)
+        private static Cell PatternColor(int x, int y)
         {
             int v = (x * 5 + y * 3 + x * y) % 7;
-            return v == 6 ? (TileColor?)null : (TileColor)v;
+            return v == 6 ? Cell.Empty : Cell.OfColor((TileColor)v);
         }
 
         private static void AssertAllEmpty(Grid grid, int width, int height)
@@ -576,7 +576,7 @@ namespace BlastGame.Core.Tests
             {
                 for (int x = 0; x < width; x++)
                 {
-                    Assert.Null(grid.Get(x, y));
+                    Assert.Equal(Cell.Empty, grid.Get(x, y));
                 }
             }
         }
