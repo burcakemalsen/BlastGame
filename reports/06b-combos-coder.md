@@ -47,3 +47,10 @@
 
 ### Öneriler
 - Elle kontrol için her komboyu kuran bir deneme tahtası (level dosyası) işe yarar; spec dışı olduğu için eklemedim.
+
+## Kontrol düzeltmesi
+
+- `Assets/Scripts/View/GridView.cs` `PlanConvert`: dokunulan hücrenin Orb görünümüne geçişi ve `OrbSelf` nabzı artık birleşme bitince (`fire = start + MergeDuration`) başlıyor; dokunulan öğe birleşme boyunca kendi görünümünde kalıyor, iki Orb görünmüyor. Işın zamanlaması değişmedi (nabız bitince başlıyor).
+- `dotnet test`: `Başarılı! - Başarısız: 0, Başarılı: 1022, Atlanan: 0, Toplam: 1022`
+- `unity-check`: çıkış 0, `Unity compile check: clean.`
+- Editor/WebGL elle kontrolü yapılmadı.

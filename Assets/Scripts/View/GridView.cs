@@ -513,7 +513,7 @@ namespace BlastGame.View
             Cell orb = e.Cleared[0].Cell;
             for (int i = 0; i < e.MergedCount; i++)
                 if (e.Cleared[i].Cell.Special == SpecialKind.Orb) orb = e.Cleared[i].Cell;
-            _looks.Add(new Look { Pos = o, Cell = orb, Start = start });
+            _looks.Add(new Look { Pos = o, Cell = orb, Start = fire }); // after the merge: the tapped item keeps its look until then
 
             IReadOnlyList<ClearedCell> conv = e.Converted;
             float step = BeamStep(conv.Count);
@@ -527,7 +527,7 @@ namespace BlastGame.View
             }
 
             float end = fire + ConvertTime(conv.Count);
-            SetStep(o, TileAnim.OrbSelf, start, end - start);
+            SetStep(o, TileAnim.OrbSelf, fire, end - fire);
             return end;
         }
 
