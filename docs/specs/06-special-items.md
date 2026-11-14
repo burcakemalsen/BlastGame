@@ -203,6 +203,7 @@ public static class SpecialRules
 - `TurnEffect` kurucusu yalnız yazılan iki denetimi yapar (`kind`/`created` uyumu ve tanımsız `kind` denetlenmez).
 - `Activate` tahta dışı hatasında `ParamName` `x` ya da `y` (`GroupFinder` gibi).
 - Orb hücresinde `Cell.Special` `SpecialKind.Orb` döner.
+- `Group` etkisinin `Cleared` sırası `GroupFinder` sırasıdır (`y` artan, sonra `x` artan). Düşme listesi Adım 3'teki gibi (`x` artan, sonra `To.Y` artan). Rocket `ToString`: `"Special(RocketHorizontal)"`, `"Special(RocketVertical)"`.
 
 **Sözleşme değişikliği notu:** `GroupFinder.FindGroup`/`BlastRules.Blast` özel hücre için yeni bir durum kazanır (önceden özel hücre yoktu); `GameSession`'ın hedef sayımı renk başına olur (tek renkli grupta sonuç aynı). Mevcut testlerin bunlar yüzünden değişmesi gerekirse testçi yapar (RULES, Onay).
 
