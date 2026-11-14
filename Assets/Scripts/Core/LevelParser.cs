@@ -65,7 +65,7 @@ namespace BlastGame.Core
                     while (reader.Read())
                     {
                         if (reader.TokenType != JsonToken.Comment)
-                            throw new JsonReaderException("Additional text found in JSON string after parsing content.");
+                            throw new JsonReaderException("Additional text found after the JSON value.", reader.Path, reader.LineNumber, reader.LinePosition, null);
                     }
                     return token;
                 }
