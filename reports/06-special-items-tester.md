@@ -32,3 +32,20 @@ Başarısız! - Başarısız:   144, Başarılı:   769, Atlanan:     0, Toplam:
 3. Rocket `ToString`: spec yalnız Bomb ve Orb örneği veriyor; `"Special(RocketHorizontal)"` kalıptan çıkarıldı.
 4. `TurnEffect` kurucusunda `cleared` null ve `triggeredBy < -1` aynı anda olunca hangisinin önce denetleneceği yazılmamış; test yazılmadı.
 5. `Tap_SameSeedSameTapsWithSpecials_...` seed 2026'da en az bir özel öğenin çalıştığını varsayar; uygulama gelmeden doğrulanamadı. Çalışmazsa test "proves nothing" mesajıyla düşer, seed değişmeli.
+
+## Kontrol sonrası eklenenler
+Dosya: `tests/Core.Tests/SpecialReviewFollowUpTests.cs`. **Yeni test: 14**; mevcut testlere dokunulmadı. Uygulamaya (`46acef1`) karşı hepsi ilk çalıştırmada yeşil, test bükülmedi.
+
+Bulgu → test:
+1. Rocket uzunluğu (`d < grid.Width` sınırı yakalanmamıştı): `Activate_VerticalRocketOnTallBoard_ReachesTopCell` (3x6), `Activate_VerticalRocketOnOneByFour_ClearsWholeColumn`, `Activate_HorizontalRocketOnWideBoard_ReachesRightmostCell` (6x3), `Activate_HorizontalRocketOnFourByOne_ClearsWholeRow`.
+2. Rocket'ın kuyruğa ekleme sırası: `Activate_HorizontalRocketFindsSeveralItems_QueuedInScanOrder`, `Activate_VerticalRocketFindsSeveralItems_DownBeforeUpAtEqualDistance` (tahtada rengi olmayan Orb'lar yalnız kendini temizler, `Effects` sırası kuyruk sırasını gösterir).
+3. Zincirde Orb: (a) `Activate_OrbBeforeRocketInQueue_RocketSkipsCellsOrbCleared`, (b) `Activate_TriggeredOrbAfterItsColorWasCleared_ClearsOnlyItself`.
+4. `GameSession`: `SessionTap_SpecialOnLastMoveGoalNotMet_Lost`, `SessionTap_RocketMergeInvalidDirection_ThrowsAndStateUnchanged` (2 satır: `-1`, `2`).
+5. `Cell`: `Orb_DifferentColors_NotEqualAsObjectAndHashesNotAllSame` (altı rengin Orb hash'leri tek değerde toplanmıyor).
+6. Alan dışındaki özel öğe yalnız düşer: `Tap_RocketWithBombAboveItsRow_BombFallsNotTriggered`, `Tap_GroupUnderBomb_BombFallsNotTriggered`.
+
+`TurnEffect` kurucusunda null ile `-2` aynı anda gelince hangisinin önce denetleneceği spec'te yazılı değil; test yazılmadı.
+
+```
+Başarılı!  - Başarısız:     0, Başarılı:   927, Atlanan:     0, Toplam:   927, Süre: 83 ms - Core.Tests.dll (net10.0)
+```
