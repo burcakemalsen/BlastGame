@@ -10,48 +10,49 @@ namespace BlastGame.Core
 
         public CellMove(CellPos from, CellPos to)
         {
-            throw new System.NotImplementedException();
+            _from = from;
+            _to = to;
         }
 
         public CellPos From
         {
-            get { throw new System.NotImplementedException(); }
+            get { return _from; }
         }
 
         public CellPos To
         {
-            get { throw new System.NotImplementedException(); }
+            get { return _to; }
         }
 
         public bool Equals(CellMove other)
         {
-            throw new System.NotImplementedException();
+            return _from == other._from && _to == other._to;
         }
 
         public override bool Equals(object obj)
         {
-            throw new System.NotImplementedException();
+            return obj is CellMove other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            throw new System.NotImplementedException();
+            return unchecked(_from.GetHashCode() * 397 ^ _to.GetHashCode());
         }
 
         /// <summary>Formats as "(x, y)->(x, y)".</summary>
         public override string ToString()
         {
-            throw new System.NotImplementedException();
+            return _from + "->" + _to;
         }
 
         public static bool operator ==(CellMove a, CellMove b)
         {
-            throw new System.NotImplementedException();
+            return a.Equals(b);
         }
 
         public static bool operator !=(CellMove a, CellMove b)
         {
-            throw new System.NotImplementedException();
+            return !a.Equals(b);
         }
     }
 }
