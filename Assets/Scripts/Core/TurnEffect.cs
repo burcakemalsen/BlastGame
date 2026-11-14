@@ -16,24 +16,28 @@ namespace BlastGame.Core
         public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created,
                           int triggeredBy, int mergedCount, IReadOnlyList<ClearedCell> converted)
         {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>Stores the cleared list as it is (no copy).</summary>
-        public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created, int triggeredBy)
-        {
             if (cleared == null)
                 throw new ArgumentNullException(nameof(cleared));
+            if (converted == null)
+                throw new ArgumentNullException(nameof(converted));
             if (triggeredBy < -1)
                 throw new ArgumentOutOfRangeException(nameof(triggeredBy), "TriggeredBy must be -1 or an effect index.");
+            if (mergedCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(mergedCount), "MergedCount cannot be negative.");
 
             Kind = kind;
             Origin = origin;
             _cleared = cleared;
             Created = created;
             TriggeredBy = triggeredBy;
-            _mergedCount = kind == EffectKind.Group ? 0 : 1;
-            _converted = NoCells;
+            _mergedCount = mergedCount;
+            _converted = converted;
+        }
+
+        /// <summary>Stores the cleared list as it is (no copy). MergedCount: 0 for Group, else 1; Converted is empty.</summary>
+        public TurnEffect(EffectKind kind, CellPos origin, IReadOnlyList<ClearedCell> cleared, Cell created, int triggeredBy)
+            : this(kind, origin, cleared, created, triggeredBy, kind == EffectKind.Group ? 0 : 1, NoCells)
+        {
         }
 
         public EffectKind Kind { get; }

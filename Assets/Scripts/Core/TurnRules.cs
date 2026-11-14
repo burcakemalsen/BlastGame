@@ -24,7 +24,7 @@ namespace BlastGame.Core
             IReadOnlyList<TurnEffect> effects;
             if (tapped.IsSpecial)
             {
-                effects = SpecialRules.Activate(grid, x, y);
+                effects = SpecialRules.Tap(grid, x, y, random);
             }
             else
             {
