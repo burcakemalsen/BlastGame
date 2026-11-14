@@ -5,50 +5,54 @@ namespace BlastGame.Core
     /// <summary>A cell emptied by an effect, with what it held before.</summary>
     public readonly struct ClearedCell : IEquatable<ClearedCell>
     {
+        private readonly CellPos _pos;
+        private readonly Cell _cell;
+
         public ClearedCell(CellPos pos, Cell cell)
         {
-            throw new NotImplementedException();
+            _pos = pos;
+            _cell = cell;
         }
 
         public CellPos Pos
         {
-            get { throw new NotImplementedException(); }
+            get { return _pos; }
         }
 
         public Cell Cell
         {
-            get { throw new NotImplementedException(); }
+            get { return _cell; }
         }
 
         public bool Equals(ClearedCell other)
         {
-            throw new NotImplementedException();
+            return _pos == other._pos && _cell == other._cell;
         }
 
         public override bool Equals(object obj)
         {
-            throw new NotImplementedException();
+            return obj is ClearedCell other && Equals(other);
         }
 
         public override int GetHashCode()
         {
-            throw new NotImplementedException();
+            return unchecked(_pos.GetHashCode() * 397 ^ _cell.GetHashCode());
         }
 
         /// <summary>Format: "(x, y) Color(Red)".</summary>
         public override string ToString()
         {
-            throw new NotImplementedException();
+            return _pos + " " + _cell;
         }
 
         public static bool operator ==(ClearedCell a, ClearedCell b)
         {
-            throw new NotImplementedException();
+            return a.Equals(b);
         }
 
         public static bool operator !=(ClearedCell a, ClearedCell b)
         {
-            throw new NotImplementedException();
+            return !a.Equals(b);
         }
     }
 }

@@ -31,7 +31,19 @@ namespace BlastGame.Core
         public TurnResult(IReadOnlyList<CellPos> blasted, IReadOnlyList<CellMove> moves, IReadOnlyList<CellPos> filled,
                           IReadOnlyList<TurnEffect> effects)
         {
-            throw new NotImplementedException();
+            if (blasted == null)
+                throw new ArgumentNullException(nameof(blasted));
+            if (moves == null)
+                throw new ArgumentNullException(nameof(moves));
+            if (filled == null)
+                throw new ArgumentNullException(nameof(filled));
+            if (effects == null)
+                throw new ArgumentNullException(nameof(effects));
+
+            _blasted = blasted;
+            _moves = moves;
+            _filled = filled;
+            _effects = effects;
         }
 
         public IReadOnlyList<CellPos> Blasted
