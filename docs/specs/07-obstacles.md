@@ -1,6 +1,6 @@
 # Spec 07: Engeller
 
-Durum: onaylandı (2026-11-14). Dal: `step/07-obstacles`. Tasarım kararları ürün sahibinin (2026-11-14). Mekanikler türün yaygın davranışına göre; referansta bulunamayan ve ürün sahibinin henüz karar vermediği yerler "orchestrator önerisi" diye işaretli. Leveller Adım 7b'de.
+Durum: onaylandı (2026-11-14). Dal: `step/07-obstacles`. Tasarım kararları ürün sahibinin (2026-11-14). Mekanikler türün yaygın davranışına ve referansa göre; referansta bulunamayan yerlerde ürün sahibi karar verdi. Leveller Adım 7b'de.
 
 ## Amaç
 Tahtaya dört özgün engel gelir. Engeller level dosyasından yerleşir, kendi kurallarına göre kırılır ya da toplanır ve level hedefi olabilir. Adlar ve görünüşler özgündür (RULES kural 1). Level modu (hamle, hedef, kazan/kaybet) geri gelir. Adım 6 ve 6b'deki özel öğeler ve kombolar aynen kalır.
