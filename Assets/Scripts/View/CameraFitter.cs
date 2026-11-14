@@ -38,7 +38,8 @@ namespace BlastGame.View
             // Cells are centered on integer coordinates, so the grid spans [-0.5, W-0.5] x [-0.5, H-0.5].
             float halfW = _gridWidth * 0.5f + Margin;
             float halfH = _gridHeight * 0.5f + Margin;
-            float aspect = Mathf.Max(1, Screen.width) / (float)Mathf.Max(1, Screen.height);
+            // Use the camera's own pixel size: it may cover only part of the screen (the UI bar takes the rest).
+            float aspect = Mathf.Max(1, _camera.pixelWidth) / (float)Mathf.Max(1, _camera.pixelHeight);
 
             // Orthographic size is the half-height; take the larger of what height and width need.
             _camera.orthographicSize = Mathf.Max(halfH, halfW / aspect);
