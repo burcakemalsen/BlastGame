@@ -39,3 +39,6 @@ Başarısız! - Başarısız:    77, Başarılı:   681, Atlanan:     0, Toplam:
 
 ## Düzeltme
 `BadGoalLists` içindeki `new ColorGoal(TileColor.Red, 0)` kurucuda patlıyordu; `default(ColorGoal)` yapıldı (2026-11-14, ürün sahibi onayı). Sonuç: `Başarılı!  - Başarısız:     0, Başarılı:   761, Atlanan:     0, Toplam:   761` (kodcunun uygulamasıyla).
+
+## Kontrol sonrası
+Kontrolcü bulguları 3 ve 4 için 5 yeni test eklendi (`LevelParserTests`): hedef elemanında bilinmeyen alan color hatasından önce, `width`→`height`→`colors` sırası (2 satır), long üstü ve negatif int taşması (2 satır). Hepsi ilk çalıştırmada yeşil (uygulama zaten doğru). Sonuç: `Başarılı!  - Başarısız:     0, Başarılı:   766, Atlanan:     0, Toplam:   766`. Yeni test toplamı 82 (~80 sınırı hafifçe aşıldı, kontrolcü bulgusu gerekçesiyle).

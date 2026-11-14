@@ -244,6 +244,35 @@ namespace BlastGame.Core.Tests
         }
 
         [Fact]
+        public void Parse_UnknownGoalFieldAndBadColor_ReportsUnknownFieldFirst()
+        {
+            string message = FailureMessage(Doc(goals: @"[ { ""color"": ""red"", ""extra"": 1, ""count"": 5 } ]"));
+
+            Assert.Contains("'goals[0].extra'", message);
+            Assert.DoesNotContain("'goals[0].color'", message);
+        }
+
+        [Theory]
+        [InlineData("17", "17", "4", "'width'", "'height'")]
+        [InlineData("9", "0", "7", "'height'", "'colors'")]
+        public void Parse_TwoInvalidNumbers_ReportsEarlierFieldInOrder(
+            string width, string height, string colors, string expected, string notExpected)
+        {
+            string message = FailureMessage(Doc(width: width, height: height, colors: colors));
+
+            Assert.Contains(expected, message);
+            Assert.DoesNotContain(notExpected, message);
+        }
+
+        [Theory]
+        [InlineData("99999999999999999999")]
+        [InlineData("-2147483649")]
+        public void Parse_NumberBeyondIntRange_MessageContainsFieldPath(string value)
+        {
+            Assert.Contains("'moves'", FailureMessage(Doc(moves: value)));
+        }
+
+        [Fact]
         public void Parse_BadColorAndBadCountInSameGoal_ReportsColorFirst()
         {
             string message = FailureMessage(Doc(goals: @"[ { ""color"": ""red"", ""count"": 0 } ]"));
