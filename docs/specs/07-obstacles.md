@@ -243,6 +243,11 @@ public sealed class LevelData                                 // eklenenler
 - `LevelData` 7 parametreli kurucu denetim sırası: `width`, `height`, `colorCount`, `moves`, `goals` (null, sonra renk kuralları), `obstacles` (null, sonra kurallar), `obstacleGoals` null, ikisi birden boş → `ArgumentException(goals)`, `obstacleGoals` kuralları.
 - `WithBalloon` renkli olmayan hücrede `false` ile de `InvalidOperationException` atar.
 - `Remaining(ObstacleKind)` tanımsız tür ya da hedef olmayan tür → `ArgumentException(kind)`.
+- Tekli Orb'un kendi hücresi de temizlenen kare sayılır; onun yan komşusu olan engel de vurulur.
+- `OrbRocket`/`OrbBomb`'da dönüşüm vuruş yapmaz: dönüşen karenin komşusu vurulmaz; yalnız dönüşen öğelerin alanları vurur.
+- Vuruşlar etkiyi üreten yerde uygulanır: `SpecialRules.Activate` ve `SpecialRules.Tap` kendi etkilerinin `Hits`'ini doldurur ve grid'e uygular; grup patlamasının vuruşlarını `TurnRules.Tap` uygular. `BlastRules.Blast` değişmez (vuruş yapmaz).
+- `GroupFinder.FindGroup` engel hücresinden başlatılınca boş liste döner (boş ve özel hücredeki gibi).
+- `LevelParser` mesaj yolları: `y = 0`'daki Çapa → `'obstacles[i].y'`; hedefte `color` ve `obstacle` ikisi birden ya da hiçbiri → `'goals[i]'`.
 
 **Sözleşme değişikliği notu:** `CellKind`'a değer eklenir. `GravityRules.Collapse` ve `RefillRules.Fill` Sandık varken yeni davranışa uyar; mevcut testlerde Sandık olmadığı için sonuç değişmez. Engelsiz grid'de bütün eski davranışlar aynen kalır. Mevcut testlerden sözleşme gereği güncellenmesi gereken olursa testçi günceller (RULES, Onay).
 
