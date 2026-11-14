@@ -11,8 +11,9 @@ namespace BlastGame.View
     /// Draws a grid: colored squares, special items made of primitive shapes and obstacles (ObstacleSprites).
     /// Cell (0, 0) is at the world origin; spacing is 1 unit. Animates a turn from its TurnResult: every
     /// effect plays on one timeline (a chained item starts when the effect that triggers it reaches it),
-    /// with obstacle hits and balloon pops on the same timeline; then tiles fall and collected Anchors
-    /// slide down and fly to their goal.
+    /// with obstacle hits and balloon pops on the same timeline (a normal group blasts ring by ring from the
+    /// tapped cell); then columns pour down bottom first and collected Anchors slide down. Every item counted
+    /// for a goal flies from where it blasted to its goal icon (drawn on the HUD); the turn ends when all landed.
     /// </summary>
     public sealed class GridView : MonoBehaviour
     {
@@ -52,7 +53,14 @@ namespace BlastGame.View
         private const float ParticleLife = 0.45f;      // confetti, planks, drops
         private const float ParticleGravity = -14f;    // world units / s^2
         private const float SplashWave = 0.2f;
-        private const float AnchorFly = 0.35f;         // a collected Anchor flies to its goal icon
+        private const float AnchorFly = 0.35f;         // a collected Anchor that counts for no goal sinks and fades
+        private const float RingDelay = 0.03f;         // a group blasts ring by ring outward from the tapped cell
+        private const float RingSpreadMax = 0.25f;     // the last ring starts by then; rings come closer in a big group
+        private const float FallStagger = 0.02f;       // in a column, falling tiles start bottom to top this far apart
+        private const float FlyDuration = 0.45f;       // a counted item flies to its goal icon (ease-in)
+        private const float FlyEndScale = 0.4f;        // its size on arrival, share of a tile
+        private const float FlyGap = 0.02f;            // flights take off at least this far apart...
+        private const float FlyGapTotal = 0.3f;        // ...but all take-offs of a turn spread over at most this
         private const int ConfettiCount = 10;
         private const int DropCount = 7;
 
@@ -126,10 +134,33 @@ namespace BlastGame.View
         private Cell _popCell;
         private float _popStart;
         private bool _isAnimating;
-        private Func<ObstacleKind, Vector3?> _goalTarget;
+        private int[,] _ring;                // group blast: steps from the tapped cell; -1 unreached member, -2 not in it
+        private readonly List<CellPos> _queue = new List<CellPos>();
+        private float[,] _fallDelay;         // when each tile starts falling, from the start of the fall
+        private Func<GoalRef, Vector3?> _claimGoal;
         private Action<int, Sprite, Color, Vector3, float> _showFlyer; // index, sprite, tint, board position, size
+        private Action<int> _hideFlyer;
         private Action _hideFlyers;
+        private Action<GoalRef> _onArrive;
+        private Action _onTurnShown;
         private readonly List<SpriteRenderer> _flyers = new List<SpriteRenderer>(); // collected Anchors, reused
+        private readonly List<Flight> _flights = new List<Flight>();       // reused by every turn
+        private readonly List<Flight> _candidates = new List<Flight>();    // reused by every turn
+        private bool[] _anchorFlies = new bool[4];                         // grows with the collected count
+
+        // An item counted for a goal, flying from its cell to the goal icon (drawn on the HUD).
+        private struct Flight
+        {
+            public GoalRef Goal;
+            public Vector3 From;
+            public Vector3 To;
+            public float Start;   // the copy shows at its cell
+            public float Launch;  // it starts moving
+            public Sprite Sprite;
+            public Color Color;
+            public bool Arrived;
+            public int Order;     // tie-break when sorting by start
+        }
 
         /// <summary>True while a turn is being animated; taps should be ignored meanwhile.</summary>
         public bool IsAnimating
@@ -138,17 +169,26 @@ namespace BlastGame.View
         }
 
         /// <summary>
-        /// Where the goal icon of an obstacle kind is, in board space (null: no icon, the item just fades), and
-        /// who draws a flying item on its way there: the board camera does not reach the HUD bar, so the flight
-        /// is drawn on the HUD (showFlyer: index, sprite, tint with alpha, board position, size in board units).
-        /// Without showFlyer the board draws the flight itself.
+        /// How counted items fly to their goals. claimGoal: the goal icon in board space for one more counted item,
+        /// or null when it does not fly (no such goal, goal already shown done, goals hidden). The board camera
+        /// does not reach the HUD bar, so flights are drawn on the HUD (showFlyer: index, sprite, tint, board
+        /// position, size in board units; hideFlyer / hideFlyers hide them). onArrive runs as each item lands;
+        /// onTurnShown runs when a turn has been fully shown. Without claimGoal or showFlyer nothing flies.
         /// </summary>
-        public void SetGoalTarget(Func<ObstacleKind, Vector3?> goalTarget, Action<int, Sprite, Color, Vector3, float> showFlyer,
-                                  Action hideFlyers)
+        public void SetGoalFlights(Func<GoalRef, Vector3?> claimGoal, Action<int, Sprite, Color, Vector3, float> showFlyer,
+                                   Action<int> hideFlyer, Action hideFlyers, Action<GoalRef> onArrive, Action onTurnShown)
         {
-            _goalTarget = goalTarget;
+            _claimGoal = claimGoal;
             _showFlyer = showFlyer;
+            _hideFlyer = hideFlyer;
             _hideFlyers = hideFlyers;
+            _onArrive = onArrive;
+            _onTurnShown = onTurnShown;
+        }
+
+        private bool CanFly
+        {
+            get { return _claimGoal != null && _showFlyer != null; }
         }
 
         public void Build(Grid grid)
@@ -160,6 +200,8 @@ namespace BlastGame.View
             _fallStart = new Vector3[grid.Width, grid.Height];
             _steps = new TileStep[grid.Width, grid.Height];
             _newInColumn = new int[grid.Width];
+            _ring = new int[grid.Width, grid.Height];
+            _fallDelay = new float[grid.Width, grid.Height];
             for (int y = 0; y < grid.Height; y++)
             {
                 for (int x = 0; x < grid.Width; x++)
@@ -235,18 +277,69 @@ namespace BlastGame.View
         {
             _isAnimating = true;
 
-            // 1. Every effect, on one timeline.
+            // One clock for the whole turn: flights started by the effects go on through the fall.
+            float now = 0f;
+
+            // 1. Every effect, on one timeline; counted items take off to their goals as they blast.
             float total = PlanEffects(result);
-            for (float t = 0f; t < total; t += Time.deltaTime)
+            PlanFlights(result);
+            while (now < total)
             {
-                ApplyTimeline(t);
+                ApplyTimeline(now);
+                ApplyFlights(now);
                 yield return null;
+                now += Time.deltaTime;
             }
             ApplyTimeline(total);
             ReleaseFx();
             transform.localPosition = Vector3.zero;
 
             // 2. Every tile shows its final cell; moved and new tiles start where they come from.
+            float fallTotal = PrepareFall(result);
+            Refresh();
+            ApplyFall(0f);
+            StartCollected(result.Collected);
+
+            // 3. Columns pour down, bottom tile first (cubic ease-in each); collected Anchors slide to y = 0.
+            float fallStart = now;
+            while (now - fallStart < fallTotal)
+            {
+                float k = Mathf.Clamp01((now - fallStart) / FallDuration);
+                ApplyFall(now - fallStart);
+                ApplyCollectedFall(result.Collected, k * k * k);
+                ApplyFlights(now);
+                yield return null;
+                now += Time.deltaTime;
+            }
+            ApplyCollectedFall(result.Collected, 1f);
+            ApplyFall(fallTotal + FallDuration);
+
+            // 4. Collected Anchors fly to their goal (or sink and fade); every flight lands before the turn ends.
+            float anchorStart = now;
+            PlanAnchorFlights(result.Collected, anchorStart);
+            while (true)
+            {
+                bool busy = ApplyFlights(now);
+                if (result.Collected.Count > 0)
+                    busy |= ApplyAnchorFade(result.Collected, (now - anchorStart) / AnchorFly);
+                if (!busy) break;
+                yield return null;
+                now += Time.deltaTime;
+            }
+            for (int i = 0; i < _flyers.Count; i++) _flyers[i].enabled = false;
+            if (_hideFlyers != null) _hideFlyers();
+            _flights.Clear();
+
+            _isAnimating = false;
+            if (_onTurnShown != null) _onTurnShown();
+        }
+
+        /// <summary>
+        /// Sets where every tile falls from and when it starts: in each column the moving tiles start bottom to
+        /// top, FallStagger apart. Returns the time until the last one starts.
+        /// </summary>
+        private float PrepareFall(TurnResult result)
+        {
             for (int y = 0; y < _grid.Height; y++)
                 for (int x = 0; x < _grid.Width; x++)
                 {
@@ -256,40 +349,26 @@ namespace BlastGame.View
             foreach (CellMove m in result.Moves)
                 _fallStart[m.To.X, m.To.Y] = CellPosition(m.From.X, m.From.Y);
             // New tiles in a column fill its top cells; they start just above the grid, in the same order,
-            // so each one is lifted by the number of new tiles in its column.
+            // so each one is lifted by the number of new tiles in its column (the mask hides them up there).
             for (int x = 0; x < _grid.Width; x++) _newInColumn[x] = 0;
             foreach (CellPos p in result.Filled) _newInColumn[p.X]++;
             foreach (CellPos p in result.Filled)
                 _fallStart[p.X, p.Y] = CellPosition(p.X, p.Y + _newInColumn[p.X]);
-            Refresh();
-            ApplyFall(0f);
-            StartCollected(result.Collected);
 
-            // 3. Everything falls together, slow start and fast end (cubic ease-in); collected Anchors slide to y = 0.
-            for (float t = 0f; t < FallDuration; t += Time.deltaTime)
+            float last = 0f;
+            for (int x = 0; x < _grid.Width; x++)
             {
-                float k = t / FallDuration;
-                ApplyFall(k * k * k);
-                ApplyCollectedFall(result.Collected, k * k * k);
-                yield return null;
-            }
-            ApplyCollectedFall(result.Collected, 1f);
-            ApplyFall(1f);
-
-            // 4. Collected Anchors: they slid down with the fall (see AnimateCollected); now they fly to the goal.
-            if (result.Collected.Count > 0)
-            {
-                Vector3? target = _goalTarget != null ? _goalTarget(ObstacleKind.Anchor) : null;
-                for (float t = 0f; t < AnchorFly; t += Time.deltaTime)
+                int rank = 0;
+                for (int y = 0; y < _grid.Height; y++)
                 {
-                    ApplyFly(result.Collected, target, t / AnchorFly);
-                    yield return null;
+                    bool moves = _fallStart[x, y] != CellPosition(x, y);
+                    _fallDelay[x, y] = moves ? rank * FallStagger : 0f;
+                    if (!moves) continue;
+                    last = Mathf.Max(last, _fallDelay[x, y]);
+                    rank++;
                 }
-                for (int i = 0; i < _flyers.Count; i++) _flyers[i].enabled = false;
-                if (_hideFlyers != null) _hideFlyers();
             }
-
-            _isAnimating = false;
+            return last + FallDuration;
         }
 
         // ---------- Planning: when each tile and effect plays. Returns the total time. ----------
@@ -370,13 +449,33 @@ namespace BlastGame.View
             }
         }
 
+        /// <summary>
+        /// When an effect that started at start hits the obstacle at p. A normal group hits when the first of its
+        /// cells next to p blasts (they blast ring by ring); the rest go by HitTime.
+        /// </summary>
+        private float HitStart(TurnEffect e, float start, CellPos p)
+        {
+            if (e.Kind != EffectKind.Group || !e.Created.IsEmpty)
+                return start + HitTime(e, p);
+            float first = float.PositiveInfinity;
+            for (int d = 0; d < 4; d++)
+            {
+                int nx = p.X + (d == 0 ? 1 : d == 1 ? -1 : 0);
+                int ny = p.Y + (d == 2 ? 1 : d == 3 ? -1 : 0);
+                if (!_grid.IsInside(nx, ny) || _ring[nx, ny] < 0) continue;
+                first = Mathf.Min(first, _steps[nx, ny].Start);
+            }
+            if (float.IsPositiveInfinity(first)) first = start;
+            return first + BlastDuration * 0.5f;
+        }
+
         private float PlanHits(TurnEffect e, float start)
         {
             float end = start;
             foreach (ObstacleHit hit in e.Hits)
             {
                 CellPos p = hit.Pos;
-                float t = start + HitTime(e, p);
+                float t = HitStart(e, start, p);
                 Vector3 at = CellPosition(p.X, p.Y);
                 bool crate = hit.Before.Obstacle == ObstacleKind.Crate;
                 if (hit.After.IsEmpty)
@@ -507,45 +606,192 @@ namespace BlastGame.View
             }
         }
 
-        private void ApplyFly(IReadOnlyList<CellMove> collected, Vector3? target, float k)
+        /// <summary>
+        /// After the slide: each collected Anchor that counts for its goal hands over to a flight from where it
+        /// sank to; the others sink a little more and fade on the board.
+        /// </summary>
+        private void PlanAnchorFlights(IReadOnlyList<CellMove> collected, float start)
+        {
+            if (_anchorFlies.Length < collected.Count)
+                _anchorFlies = new bool[Mathf.Max(collected.Count, _anchorFlies.Length * 2)];
+            _candidates.Clear();
+            for (int i = 0; i < collected.Count; i++)
+            {
+                _anchorFlies[i] = false;
+                if (!CanFly) continue;
+                Vector3? target = _claimGoal(GoalRef.ForObstacle(ObstacleKind.Anchor));
+                if (!target.HasValue) continue;
+                _anchorFlies[i] = true;
+                _flyers[i].enabled = false; // the HUD copy takes over
+                CellMove m = collected[i];
+                _candidates.Add(new Flight
+                {
+                    Goal = GoalRef.ForObstacle(ObstacleKind.Anchor),
+                    From = CellPosition(m.To.X, m.To.Y) + new Vector3(0f, -0.35f, 0f),
+                    To = target.Value, Start = start, Sprite = _flyers[i].sprite, Color = _flyers[i].color
+                });
+            }
+            AddLaunches(start);
+        }
+
+        /// <summary>Anchors that do not fly sink and fade; true while that is still going on.</summary>
+        private bool ApplyAnchorFade(IReadOnlyList<CellMove> collected, float k)
         {
             float e = EaseInOut(Mathf.Clamp01(k));
             for (int i = 0; i < collected.Count; i++)
             {
+                if (_anchorFlies[i]) continue;
                 CellMove m = collected[i];
-                Vector3 from = CellPosition(m.To.X, m.To.Y) + new Vector3(0f, -0.35f, 0f);
                 SpriteRenderer sr = _flyers[i];
+                sr.transform.localPosition = CellPosition(m.To.X, m.To.Y) + new Vector3(0f, -0.35f - 0.5f * e, 0f);
                 Color c = sr.color;
-                Vector3 pos;
-                float size;
-                if (target.HasValue)
-                {
-                    // An arc up to the icon, shrinking to icon size.
-                    pos = Vector3.Lerp(from, target.Value, e);
-                    pos.x += Mathf.Sin(Mathf.PI * e) * 0.6f;
-                    size = TileSize * Mathf.Lerp(1f, 0.55f, e);
-                    c.a = k < 0.85f ? 1f : 1f - (k - 0.85f) / 0.15f;
-                }
-                else
-                {
-                    pos = from + new Vector3(0f, -0.5f * e, 0f);
-                    size = TileSize;
-                    c.a = 1f - e;
-                }
+                c.a = 1f - e;
+                sr.color = c;
+            }
+            return k < 1f;
+        }
 
-                if (_showFlyer != null)
+        // ---------- Flights of counted items to their goal icons ----------
+
+        /// <summary>
+        /// Every item this turn counts for a goal, with when and where it blasts (colored cells of a goal color,
+        /// balloons, broken Pinatas and Crates). The earliest ones claim the goal first; items past what the goal
+        /// still shows do not fly.
+        /// </summary>
+        private void PlanFlights(TurnResult result)
+        {
+            _flights.Clear();
+            _candidates.Clear();
+            if (!CanFly) return;
+
+            IReadOnlyList<TurnEffect> effects = result.Effects;
+            if (effects.Count == 0)
+            {
+                // A result without effects counts nothing in the session either (no Cleared lists).
+                return;
+            }
+            for (int i = 0; i < effects.Count; i++)
+            {
+                TurnEffect e = effects[i];
+                float start = _effectStart[i];
+                foreach (ClearedCell c in e.Cleared)
                 {
-                    // Drawn on the HUD, so it stays visible over the bar.
-                    sr.enabled = false;
-                    _showFlyer(i, sr.sprite, c, pos, size);
+                    TileStep step = _steps[c.Pos.X, c.Pos.Y];
+                    Vector3 from = CellPosition(c.Pos.X, c.Pos.Y);
+                    float t = start;
+                    if (step.Anim == TileAnim.Collect)
+                    {
+                        // A merging tile vanishes into the tapped cell; its copy leaves from there.
+                        from = step.Target;
+                        t = step.Start + step.Duration;
+                    }
+                    else if (step.Anim != TileAnim.None)
+                    {
+                        t = step.Start;
+                    }
+                    AddCellCandidates(c.Cell, from, t);
                 }
-                else
+                foreach (ClearedCell c in e.Converted)
                 {
-                    sr.transform.localPosition = pos;
-                    SetScale(sr.transform, size);
-                    sr.color = c;
+                    float t = start;
+                    for (int j = 0; j < _looks.Count; j++)
+                        if (_looks[j].Pos == c.Pos) t = _looks[j].Start;
+                    AddCellCandidates(c.Cell, CellPosition(c.Pos.X, c.Pos.Y), t);
+                }
+                foreach (ObstacleHit hit in e.Hits)
+                {
+                    if (!hit.After.IsEmpty) continue;
+                    Color tint;
+                    Sprite sprite = ObstacleSprites.ForCell(hit.Before, out tint);
+                    AddCandidate(GoalRef.ForObstacle(hit.Before.Obstacle), CellPosition(hit.Pos.X, hit.Pos.Y),
+                                 HitStart(e, start, hit.Pos), sprite, tint);
                 }
             }
+
+            // Earliest first; the order of equal times stays as planned.
+            _candidates.Sort((a, b) => a.Start != b.Start ? a.Start.CompareTo(b.Start) : a.Order.CompareTo(b.Order));
+            int kept = 0;
+            for (int i = 0; i < _candidates.Count; i++)
+            {
+                Flight f = _candidates[i];
+                Vector3? target = _claimGoal(f.Goal);
+                if (!target.HasValue) continue;
+                f.To = target.Value;
+                _candidates[kept++] = f;
+            }
+            _candidates.RemoveRange(kept, _candidates.Count - kept);
+            AddLaunches(0f);
+        }
+
+        /// <summary>A colored cell counts for its color goal and, with a balloon, for the balloon goal.</summary>
+        private void AddCellCandidates(Cell cell, Vector3 from, float t)
+        {
+            if (cell.Kind != CellKind.Color) return;
+            AddCandidate(GoalRef.ForColor(cell.Color), from, t, ShapeSprites.Square, TileColors.ToColor(cell.Color));
+            if (cell.HasBalloon)
+            {
+                Color tint;
+                Sprite sprite = ObstacleSprites.For(ObstacleKind.WaterBalloon, 1, out tint);
+                AddCandidate(GoalRef.ForObstacle(ObstacleKind.WaterBalloon), from, t, sprite, tint);
+            }
+        }
+
+        private void AddCandidate(GoalRef goal, Vector3 from, float t, Sprite sprite, Color color)
+        {
+            _candidates.Add(new Flight
+            {
+                Goal = goal, From = from, Start = t, Sprite = sprite, Color = color, Order = _candidates.Count
+            });
+        }
+
+        /// <summary>
+        /// Moves the claimed candidates (sorted by start) into the flights: take-offs follow each other at least
+        /// a short gap apart (shorter when there are many), never before an item has blasted or before notBefore.
+        /// </summary>
+        private void AddLaunches(float notBefore)
+        {
+            int n = _candidates.Count;
+            if (n == 0) return;
+            float gap = n > 1 ? Mathf.Min(FlyGap, FlyGapTotal / (n - 1)) : 0f;
+            float last = float.NegativeInfinity;
+            for (int i = 0; i < _flights.Count; i++) last = Mathf.Max(last, _flights[i].Launch);
+            for (int i = 0; i < n; i++)
+            {
+                Flight f = _candidates[i];
+                f.Launch = Mathf.Max(Mathf.Max(f.Start, notBefore), last + gap);
+                last = f.Launch;
+                f.Arrived = false;
+                _flights.Add(f);
+            }
+            _candidates.Clear();
+        }
+
+        /// <summary>
+        /// Shows every flight at time t on the HUD: the copy waits at its cell until take-off, then speeds up
+        /// toward the icon while it shrinks. A landing hides it and tells the HUD. True while any is still on its way.
+        /// </summary>
+        private bool ApplyFlights(float t)
+        {
+            bool busy = false;
+            for (int i = 0; i < _flights.Count; i++)
+            {
+                Flight f = _flights[i];
+                if (f.Arrived) continue;
+                busy = true;
+                if (t < f.Start) continue;
+                if (t >= f.Launch + FlyDuration)
+                {
+                    f.Arrived = true;
+                    _flights[i] = f;
+                    if (_hideFlyer != null) _hideFlyer(i);
+                    if (_onArrive != null) _onArrive(f.Goal);
+                    continue;
+                }
+                float k = Mathf.Clamp01((t - f.Launch) / FlyDuration);
+                Vector3 pos = Vector3.LerpUnclamped(f.From, f.To, EaseIn(k));
+                _showFlyer(i, f.Sprite, f.Color, pos, TileSize * Mathf.Lerp(1f, FlyEndScale, k));
+            }
+            return busy;
         }
 
         /// <summary>Time from the start of an effect until it reaches a cell (when a chained item there fires).</summary>
@@ -581,9 +827,12 @@ namespace BlastGame.View
         {
             if (e.Created.IsEmpty)
             {
+                // Inside out: the tapped cell first, then ring after ring of group cells (steps over 4 neighbors).
+                int maxRing = MeasureRings(e);
+                float delay = maxRing > 0 ? Mathf.Min(RingDelay, RingSpreadMax / maxRing) : 0f;
                 foreach (ClearedCell c in e.Cleared)
-                    SetStep(c.Pos, TileAnim.Shrink, start, BlastDuration);
-                return start + BlastDuration;
+                    SetStep(c.Pos, TileAnim.Shrink, start + _ring[c.Pos.X, c.Pos.Y] * delay, BlastDuration);
+                return start + maxRing * delay + BlastDuration;
             }
 
             // Merge: the group gathers in the tapped cell, then the new item pops in there.
@@ -598,6 +847,51 @@ namespace BlastGame.View
             _popCell = e.Created;
             _popStart = start + CollectDuration;
             return _popStart + PopDuration;
+        }
+
+        /// <summary>
+        /// Fills _ring for a group: steps from the tapped cell inside the group (breadth first over 4 neighbors);
+        /// -2 for cells outside it. Returns the largest ring.
+        /// </summary>
+        private int MeasureRings(TurnEffect e)
+        {
+            for (int y = 0; y < _grid.Height; y++)
+                for (int x = 0; x < _grid.Width; x++)
+                    _ring[x, y] = -2;
+            foreach (ClearedCell c in e.Cleared)
+                _ring[c.Pos.X, c.Pos.Y] = -1;
+
+            CellPos o = e.Origin;
+            _queue.Clear();
+            if (_grid.IsInside(o.X, o.Y) && _ring[o.X, o.Y] == -1)
+            {
+                _ring[o.X, o.Y] = 0;
+                _queue.Add(o);
+            }
+            for (int i = 0; i < _queue.Count; i++)
+            {
+                CellPos p = _queue[i];
+                int next = _ring[p.X, p.Y] + 1;
+                for (int d = 0; d < 4; d++)
+                {
+                    int nx = p.X + (d == 0 ? 1 : d == 1 ? -1 : 0);
+                    int ny = p.Y + (d == 2 ? 1 : d == 3 ? -1 : 0);
+                    if (!_grid.IsInside(nx, ny) || _ring[nx, ny] != -1) continue;
+                    _ring[nx, ny] = next;
+                    _queue.Add(new CellPos(nx, ny));
+                }
+            }
+
+            // A group is connected; should a cell still be unreached, it goes by its straight distance.
+            int max = 0;
+            foreach (ClearedCell c in e.Cleared)
+            {
+                CellPos p = c.Pos;
+                if (_ring[p.X, p.Y] < 0)
+                    _ring[p.X, p.Y] = Mathf.Abs(p.X - o.X) + Mathf.Abs(p.Y - o.Y);
+                max = Mathf.Max(max, _ring[p.X, p.Y]);
+            }
+            return max;
         }
 
         private float PlanRocket(TurnEffect e, float start)
@@ -1044,12 +1338,16 @@ namespace BlastGame.View
             }
         }
 
-        private void ApplyFall(float amount)
+        /// <summary>Every tile at time t of the fall: it waits for its own delay, then falls with a cubic ease-in.</summary>
+        private void ApplyFall(float t)
         {
             for (int y = 0; y < _grid.Height; y++)
                 for (int x = 0; x < _grid.Width; x++)
+                {
+                    float k = Mathf.Clamp01((t - _fallDelay[x, y]) / FallDuration);
                     _tiles[x, y].transform.localPosition =
-                        Vector3.LerpUnclamped(_fallStart[x, y], CellPosition(x, y), amount);
+                        Vector3.LerpUnclamped(_fallStart[x, y], CellPosition(x, y), k * k * k);
+                }
         }
 
         // ---------- Tile looks. ----------
