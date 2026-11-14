@@ -257,6 +257,7 @@ Otomatik test edilmez, kapısı elle kontrol listesidir.
 - **Çizimler:** önce yer tutucu çizimler (kodla, mevcut tarz). Görseller onaylanınca aynı yerlere sprite olarak takılır. Sandığın her katı ayrı görünür. Su balonu karenin üstünde şeffaf su katmanıdır, altındaki karenin rengi görünür.
 - **Animasyonlar (hızlı, vurucu):** Pinyata kırılınca parçalanıp şekerleme/konfeti saçar. Sandık her vuruşta sarsılır, bir kat kırık tahta olarak düşer. Su balonu patlayınca su sıçrar. Çapa dibe inince aşağı kayıp hedef simgesine uçar. Hedefe sayılan engeller HUD'daki simgeye doğru uçar (renk hedefindeki gibi, varsa).
 - **Deneme levelleri:** her engel için bir level dosyası `Assets/Resources/Levels/`'e eklenir (mevcut üç level kalır). Bunlar yalnız denemedir, Adım 7b'de yeniden yapılır.
+- **Basit level seçici (ürün sahibi kararı, 2026-11-15):** başlangıçta level numaraları listelenir, dokunulan level doğrudan açılır; oyun içinde seçiciye dönmek için bir düğme olur. Kilit yok (her level açık). Yalnız görüntü katmanı; kural katmanına dokunmaz.
 - Geçici nesneler havuzdan alınır, sızıntı olmaz.
 
 ## Görseller
@@ -268,7 +269,7 @@ Level eğrisi ve şekilli tahta (Adım 7b), renkli ve metal engel çeşitleri, �
 
 ## Elle kontrol listesi
 1. `scripts/unity-check.ps1` 0 döner.
-2. Level modu: hamle sayacı, renk ve engel hedefleri, kazan/kaybet paneli çalışıyor.
+2. Level seçiciden her level açılıyor ve seçiciye dönülüyor. Level modu: hamle sayacı, renk ve engel hedefleri, kazan/kaybet paneli çalışıyor.
 3. Her deneme level'ında: Pinyata komşu patlamayla kırılıyor ve düşüyor. Sandık kat kat kırılıyor, üstündeki kareler duruyor. Su balonu altındaki kareyle patlıyor. Çapa dibe inince toplanıyor.
 4. Roket, bomba ve kombo engellere 1 vuruş yapıyor, Çapayı kırmıyor.
 5. Animasyonlar hızlı ve okunaklı, Console temiz, sızıntı yok.
