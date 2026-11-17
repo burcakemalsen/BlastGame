@@ -70,29 +70,32 @@ Her görev tarifi şunu içerir: hangi dosyaları okuyacağı (`docs/RULES.md` v
 
 ## 5. Adımlar
 
+Durum (2026-11-17): Adım 0-7, 6b ve 7c tamamlandı; 7b (level tasarımı) sürüyor. Her adımın spec'i `docs/specs/`, raporları `reports/` altında; birleşmeler PR olarak `main`'de.
+
 ### Adım 0: iskelet (tamamlandı, 2026-11-14)
 Kurulumcu yaptı, oyun kodu yok: Unity projesi ve asmdef'ler, test projeleri, derleme/build/tarama scriptleri, CI, README, boş APK ve Pages'te boş WebGL. Yapılacaklar listesi `docs/tasks/00-setup.md` ve `docs/tasks/00b-webgl.md`'de, sonuçlar `reports/00-setup.md` ve `reports/00b-webgl.md`'de.
 
 Bitti tanımı: Unity projesi hatasız derleniyor, `dotnet test` yeşil, C# sürümü doğrulandı, boş APK üretildi, boş WebGL sayfası iPhone Safari'de açıldı, tarama deneme dosyasını yakalıyor, `CLAUDE.md`'ye komutlar yazıldı, ilk push taramadan geçti.
 
-### Faz 1: oynanabilir çekirdek
-| # | Adım | Bitti tanımı |
-|---|---|---|
-| 1 | Grid | Kural katmanında grid modeli testli; Play'de renkli karelerden grid görünüyor; grid'li WebGL sayfası telefonda açıldı |
-| 2 | Grup bulma ve patlatma | Dokunulan karenin aynı renkli komşu grubu bulunuyor (flood fill), 2 ve üstü patlıyor, tek kare patlamıyor; testler köşe, kenar, tüm grid tek renk durumlarını kapsıyor |
-| 3 | Düşme ve doldurma | Patlamadan sonra kareler aşağı iniyor, üstten seed'li rastgele renk geliyor; aynı seed aynı sonucu veriyor |
-| 4 | Hamle, hedef, kazan/kaybet | Hamle sayacı, renk toplama hedefi, kazanma ve kaybetme ekranı |
-| 5 | JSON level | Level boyutu, renk sayısı, hamle, hedef dosyadan okunuyor; bozuk dosya anlaşılır hata veriyor; en az 3 level |
+### Faz 1: oynanabilir çekirdek (tamamlandı)
+| # | Adım | Bitti tanımı | Durum |
+|---|---|---|---|
+| 1 | Grid | Kural katmanında grid modeli testli; Play'de renkli karelerden grid görünüyor; grid'li WebGL sayfası telefonda açıldı | Tamamlandı (PR #2) |
+| 2 | Grup bulma ve patlatma | Dokunulan karenin aynı renkli komşu grubu bulunuyor (flood fill), 2 ve üstü patlıyor, tek kare patlamıyor; testler köşe, kenar, tüm grid tek renk durumlarını kapsıyor | Tamamlandı (PR #3) |
+| 3 | Düşme ve doldurma | Patlamadan sonra kareler aşağı iniyor, üstten seed'li rastgele renk geliyor; aynı seed aynı sonucu veriyor | Tamamlandı (PR #4) |
+| 4 | Hamle, hedef, kazan/kaybet | Hamle sayacı, renk toplama hedefi, kazanma ve kaybetme ekranı | Tamamlandı (PR #5) |
+| 5 | JSON level | Level boyutu, renk sayısı, hamle, hedef dosyadan okunuyor; bozuk dosya anlaşılır hata veriyor; en az 3 level | Tamamlandı (PR #6) |
 
 Adım 5 notu: Unity'nin `JsonUtility`'si `UnityEngine` içinde olduğu için kural katmanında kullanılamaz. Önerilen yol, Unity'den bağımsız bir JSON kütüphanesidir (Newtonsoft: Unity'de resmi paketi, testlerde NuGet paketi); böylece bozuk dosya davranışı da otomatik testlenir. Kesin karar Adım 5 spec'inde.
 
 ### Faz 2: ayırt edici kısım
-| # | Adım | Bitti tanımı |
-|---|---|---|
-| 6 | Özel öğe (özgün tasarım) | Tasarım ürün sahibiyle konuşulup spec'e yazıldı; büyük grup özel öğe üretiyor, özel öğe kendi etkisini yapıyor; etkinin animasyonu var |
-| 7 | Engel (özgün tasarım) | Tasarım spec'te; engel level dosyasından geliyor, kuralına göre kırılıyor; level hedefi olabiliyor; kırılma animasyonu |
-| 8 | Çıkmaz durum | Hiç hamle kalmadığı algılanıyor ve grid oynanabilir hale getiriliyor |
-| 9 | Cila ve sunum | Basit animasyon, güzel görsel, README'de ekran görüntüsü, kısa video, tarayıcıda oynama linki (GitHub Pages) ve GitHub Releases'te APK |
+| # | Adım | Bitti tanımı | Durum |
+|---|---|---|---|
+| 6 | Özel öğe (özgün tasarım) | Tasarım ürün sahibiyle konuşulup spec'e yazıldı; büyük grup özel öğe üretiyor, özel öğe kendi etkisini yapıyor; etkinin animasyonu var | Tamamlandı (PR #8; kombolar 6b, PR #9) |
+| 7 | Engel (özgün tasarım) | Tasarım spec'te; engel level dosyasından geliyor, kuralına göre kırılıyor; level hedefi olabiliyor; kırılma animasyonu | Tamamlandı (PR #10; patlama hissi 7c, PR #11) |
+| 7b | Level tasarımı | İlk level'lar referanstaki tanıtım sırası ve zorluk eğrisiyle; engeller tek tek, bol hamleyle tanıtılır | Sürüyor |
+| 8 | Çıkmaz durum | Hiç hamle kalmadığı algılanıyor ve grid oynanabilir hale getiriliyor | Sırada |
+| 9 | Cila ve sunum | Basit animasyon, güzel görsel, README'de ekran görüntüsü, kısa video, tarayıcıda oynama linki (GitHub Pages) ve GitHub Releases'te APK | Sırada |
 
 ## 6. Açık kararlar (ürün sahibinin)
 - **Ürün katmanı:** (a) kısa tasarım dokümanı (neden bu engel, level'lar neden bu zorlukta), (b) bir level'ı binlerce kez kendi kendine oynayıp kazanma oranını ölçen küçük program. Kabul edilirse Faz 2'ye adım olarak eklenir.

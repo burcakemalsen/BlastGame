@@ -2,13 +2,24 @@
 
 [![tests](https://github.com/burcakemalsen/BlastGame/actions/workflows/tests.yml/badge.svg)](https://github.com/burcakemalsen/BlastGame/actions/workflows/tests.yml)
 
-A mobile "blast" (collapse / match-2) puzzle game built with Unity 6000.6.3f1 and C#. The name is a placeholder.
+A mobile "blast" (collapse / match-2) puzzle game prototype built with Unity 6000.6.3f1 and C#. The name is a placeholder.
 
-**Status:** in development. The project skeleton, test setup and build scripts are in place; gameplay is built step by step (see [docs/PLAN.md](docs/PLAN.md)).
+**▶ Play in the browser: https://burcakemalsen.github.io/BlastGame/**
+(WebGL build from the `gh-pages` branch; desktop and mobile browsers with WebGL 2, e.g. Chrome or iOS 16.4+ Safari.)
 
-## Play in the browser
+**How to play:** tap or click a group of two or more same-colored tiles to pop it, and reach the goals shown at the top before you run out of moves.
 
-**https://burcakemalsen.github.io/BlastGame/** (WebGL build served from the `gh-pages` branch, made for mobile browsers; needs a browser with WebGL 2 and modern WebAssembly, e.g. iOS 16.4+ Safari).
+![Gameplay: level 5, a row of layered crates and two rockets](docs/images/gameplay-level5.png)
+
+## What you can play now
+
+- **Levels:** 7 levels loaded from JSON files, each with a move limit and goals (colors and obstacles), win and lose screens, and a level select.
+- **Special items:** big groups create a rocket (clears a row or column), a bomb (3x3) or an orb (clears one color); touching specials merge into six combos.
+- **Four original obstacles:** pinata, crate with 1 to 3 layers, water balloon over a tile, and an anchor that must be brought down to the bottom row.
+- **Blast feel:** groups pop inside out, goal items fly to their goal icons, new tiles pour in from the top.
+- **Tests:** 1,226 automated tests on the rules layer, run by CI on every push.
+
+**Status:** steps 1 to 7 (core gameplay, special items, combos, obstacles, blast feel) are done; new levels with a difficulty curve are being added now. Progress per step is in [docs/PLAN.md](docs/PLAN.md#5-adımlar).
 
 ## Built with AI assistance
 
@@ -18,6 +29,8 @@ This game is developed with AI agents, openly. The human (product owner) sets sc
 - **Coder** writes the stubs and then the implementation.
 - **Tester** writes tests from the spec and stub signatures only, trying to break the code.
 - **Two independent reviewers** (from different model families) hunt for defects and weak tests.
+
+The obstacle art was generated with an AI image model and approved by the product owner.
 
 Every step passes a gate: spec → stub → tests (must be red) → code (tests green) → independent review → human play-test. Each step lives on its own branch with one commit per stage (so the red-test commit precedes the green-code commit), then a pull request that merges only when CI is green, as a merge commit. See [docs/PLAN.md](docs/PLAN.md#9-git-akışı) for the git flow. The rules every agent follows are in [docs/RULES.md](docs/RULES.md); the architecture, roles and steps are in [docs/PLAN.md](docs/PLAN.md).
 
