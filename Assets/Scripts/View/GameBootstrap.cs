@@ -112,6 +112,9 @@ namespace BlastGame.View
             if (_levels == null) return;
             _hud.HideResult();
             _hud.ShowLevelSelect();
+            // Flights of a turn still going on are hidden under the panel (see ShowFlyer); they still land,
+            // and the goal numbers match the session when the turn ends.
+            _hud.HideFlyers();
         }
 
         /// <summary>A level select button: that level starts, whatever was being played.</summary>
@@ -139,7 +142,14 @@ namespace BlastGame.View
             _session = _levels[index].CreateSession(_random);
             Grid grid = _session.Grid;
 
-            if (_view != null) Destroy(_view.gameObject);
+            if (_view != null)
+            {
+                // A board left mid-turn: its animation stops now (Destroy waits for the end of the frame),
+                // so it can neither show a flight again nor count a landing on the new level.
+                _view.StopTurn();
+                _view.gameObject.SetActive(false);
+                Destroy(_view.gameObject);
+            }
             _view = new GameObject("GridView").AddComponent<GridView>();
             _view.Build(grid);
             _hud.HideFlyers(); // flights of a board left mid-turn
@@ -169,6 +179,7 @@ namespace BlastGame.View
         /// <summary>Draws a flying item on the HUD at a board position, sized in board units.</summary>
         private void ShowFlyer(int index, Sprite sprite, Color color, Vector3 boardPos, float size)
         {
+            if (_hud.IsLevelSelectVisible) return; // the panel covers the board; nothing flies over it
             Vector3 screen = _camera.WorldToScreenPoint(boardPos);
             float pixelsPerUnit = _camera.pixelHeight / (2f * _camera.orthographicSize);
             _hud.ShowFlyer(index, sprite, color, new Vector2(screen.x, screen.y), size * pixelsPerUnit);

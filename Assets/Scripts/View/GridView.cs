@@ -186,6 +186,26 @@ namespace BlastGame.View
             _onTurnShown = onTurnShown;
         }
 
+        /// <summary>
+        /// Stops a turn being shown (the board is about to go): the animation ends at once, every flight is
+        /// hidden and no more landings are reported. Call before destroying the board.
+        /// </summary>
+        public void StopTurn()
+        {
+            StopAllCoroutines();
+            _flights.Clear();
+            _candidates.Clear();
+            for (int i = 0; i < _flyers.Count; i++) _flyers[i].enabled = false;
+            if (_hideFlyers != null) _hideFlyers();
+            _claimGoal = null;
+            _showFlyer = null;
+            _hideFlyer = null;
+            _hideFlyers = null;
+            _onArrive = null;
+            _onTurnShown = null;
+            _isAnimating = false;
+        }
+
         private bool CanFly
         {
             get { return _claimGoal != null && _showFlyer != null; }

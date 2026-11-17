@@ -36,3 +36,11 @@ HudView: `IconPop` 0.15 sn, `IconPopAmount` 0.3. `AnchorFly` (0.35) artık yaln�
 ## Doğrulanmayanlar
 - Görsel his, süreler, akıcılık ve iPhone/WebGL davranışı (elle kontrol listesi 2-6) denenmedi; yalnız derleme ve testler.
 - Tur ortasında "Levels" açılırsa süren uçuş kopyaları seviye panelinin üstünde tur bitene kadar görünebilir (Çapa uçuşunda da önceden böyleydi). Öneri: panel açılınca uçuşları gizlemek.
+
+## Ek: kontrol düzeltmeleri
+Kontrol raporu `reports/07c-blast-feel-claude.md` bulgu 1 ve 2; sabitler değişmedi, bulgu 3-4'e dokunulmadı.
+- Bulgu 1: `GridView.StopTurn()` eklendi (coroutine'i durdurur, uçuşları temizleyip gizler, geri çağrıları boşaltır, `IsAnimating` false). `GameBootstrap.StartLevel` eski tahtayı silmeden önce `StopTurn()` + `SetActive(false)` çağırır; ardından `HideFlyers` ve yeni oturumla `BuildGoals`/`Refresh` (önceden de vardı) sayacı eşitler.
+- Bulgu 2: `OnLevels` panel açılınca `HideFlyers` çağırır; `ShowFlyer` panel açıkken kopya çizmez. Tur sürer, kopyalar görünmeden iner, tur sonunda `OnTurnShown` sayacı gerçek değere eşitler.
+- `dotnet test`: `Başarılı!  - Başarısız:     0, Başarılı:  1226, Atlanan:     0, Toplam:  1226`
+- `unity-check.ps1`: `Unity compile check: clean.` (exit 0)
+- Doğrulanmayan: tur ortasında seviye değiştirme elle denenmedi.
