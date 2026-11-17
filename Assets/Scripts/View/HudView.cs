@@ -22,6 +22,8 @@ namespace BlastGame.View
         private const int ResultTitleSize = 100;
         private const int ErrorTextSize = 44;
         private const float DoneAlpha = 0.35f;
+        private const float IconPop = 0.15f;        // seconds: a goal icon swells when a flying item lands on it
+        private const float IconPopAmount = 0.3f;   // extra size at the top of the swell
         private static readonly Color TextColor = new Color(0.93f, 0.93f, 0.96f, 1f);
         private static readonly Color BarColor = new Color(0.12f, 0.12f, 0.18f, 1f);
 
@@ -33,6 +35,9 @@ namespace BlastGame.View
             public Color SwatchColor;   // full-alpha swatch or icon tint
             public Image Swatch;
             public Text Label;
+            public int Shown;           // the number on screen; lags the session while items are flying
+            public int Claimed;         // items flying to it this turn
+            public float PopStart = -1f;
         }
 
         private Font _font;
@@ -51,6 +56,7 @@ namespace BlastGame.View
         private Action _onLevels;
         private GameObject _levelSelect;
         private Canvas _canvas;
+        private GameSession _session;
         private readonly List<Image> _flyers = new List<Image>(); // items flying to a goal icon, reused
 
         public bool IsResultVisible
@@ -139,24 +145,63 @@ namespace BlastGame.View
         }
 
         /// <summary>
-        /// Screen position of an obstacle goal's icon, for effects that fly to it. False when that kind is not a
-        /// goal or the goals are hidden.
+        /// One more item wants to fly to a goal this turn: true, with the icon's screen position, while the goal
+        /// still shows more than the items already flying to it. False when that goal does not exist, is already
+        /// covered, or the goals are hidden (endless mode).
         /// </summary>
-        public bool TryGetGoalScreenPoint(ObstacleKind kind, out Vector2 screen)
+        public bool TryClaimGoal(GoalRef goal, out Vector2 screen)
         {
             screen = Vector2.zero;
             if (!_goalsRoot.gameObject.activeInHierarchy) return false;
+            GoalItem item = Find(goal);
+            if (item == null || item.Shown - item.Claimed <= 0) return false;
+            item.Claimed++;
+            // Screen-space overlay canvas: the world position is the screen position.
+            RectTransform rt = item.Swatch.rectTransform;
+            Vector3 p = rt.TransformPoint(rt.rect.center);
+            screen = new Vector2(p.x, p.y);
+            return true;
+        }
+
+        /// <summary>A flying item landed on its goal: the number drops by one (never below the session's) and the icon pops.</summary>
+        public void GoalArrived(GoalRef goal)
+        {
+            GoalItem item = Find(goal);
+            if (item == null || _session == null) return;
+            item.Shown = Mathf.Max(Remaining(item), item.Shown - 1);
+            ShowGoal(item);
+            item.PopStart = Time.time;
+        }
+
+        private GoalItem Find(GoalRef goal)
+        {
             for (int i = 0; i < _goalItems.Count; i++)
             {
                 GoalItem item = _goalItems[i];
-                if (!item.IsObstacle || item.Kind != kind) continue;
-                // Screen-space overlay canvas: the world position is the screen position.
-                RectTransform rt = item.Swatch.rectTransform;
-                Vector3 p = rt.TransformPoint(rt.rect.center);
-                screen = new Vector2(p.x, p.y);
-                return true;
+                if (item.IsObstacle != goal.IsObstacle) continue;
+                if (item.IsObstacle ? item.Kind == goal.Kind : item.Color == goal.Color) return item;
             }
-            return false;
+            return null;
+        }
+
+        private int Remaining(GoalItem item)
+        {
+            return item.IsObstacle ? _session.Remaining(item.Kind) : _session.Remaining(item.Color);
+        }
+
+        // The icon pop of goals that just got an item.
+        private void Update()
+        {
+            for (int i = 0; i < _goalItems.Count; i++)
+            {
+                GoalItem item = _goalItems[i];
+                if (item.PopStart < 0f) continue;
+                float k = (Time.time - item.PopStart) / IconPop;
+                float s = 1f;
+                if (k >= 1f) item.PopStart = -1f;
+                else s = 1f + IconPopAmount * Mathf.Sin(Mathf.PI * k);
+                item.Swatch.rectTransform.localScale = new Vector3(s, s, 1f);
+            }
         }
 
         private GoalItem NewGoalItem(string name, Sprite icon, Color color)
@@ -173,8 +218,10 @@ namespace BlastGame.View
             }
             swatch.rectTransform.anchorMin = new Vector2(0f, 0.5f);
             swatch.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            swatch.rectTransform.pivot = new Vector2(0f, 0.5f);
+            // Pivot at the center, so the arrival pop swells in place.
+            swatch.rectTransform.pivot = new Vector2(0.5f, 0.5f);
             swatch.rectTransform.sizeDelta = icon != null ? new Vector2(64f, 64f) : new Vector2(56f, 56f);
+            swatch.rectTransform.anchoredPosition = new Vector2(swatch.rectTransform.sizeDelta.x * 0.5f, 0f);
 
             var label = NewText("Count", item.transform, 44, TextAnchor.MiddleLeft);
             label.rectTransform.anchorMin = new Vector2(0f, 0f);
@@ -185,24 +232,44 @@ namespace BlastGame.View
             return new GoalItem { SwatchColor = color, Swatch = swatch, Label = label };
         }
 
-        /// <summary>Updates the numbers from the session. Allocates no objects (only the label strings).</summary>
+        /// <summary>
+        /// Shows every number as the session has it (start of a level, end of a shown turn) and ends the turn's
+        /// claims. Allocates no objects (only the label strings).
+        /// </summary>
         public void Refresh(GameSession session)
         {
+            _session = session;
             _movesText.text = "Moves " + session.MovesLeft;
             for (int i = 0; i < _goalItems.Count; i++)
             {
                 GoalItem item = _goalItems[i];
-                int left = item.IsObstacle ? session.Remaining(item.Kind) : session.Remaining(item.Color);
-                bool done = left == 0;
-                item.Label.text = done ? "Done" : left.ToString();
-                float alpha = done ? DoneAlpha : 1f;
-                Color c = item.SwatchColor;
-                c.a *= alpha;
-                item.Swatch.color = c;
-                Color t = item.Label.color;
-                t.a = alpha;
-                item.Label.color = t;
+                item.Shown = Remaining(item);
+                item.Claimed = 0;
+                ShowGoal(item);
             }
+        }
+
+        /// <summary>
+        /// After a tap: only the moves follow the session at once; goal numbers drop as flying items land
+        /// (GoalArrived) and catch up with the session in the next Refresh.
+        /// </summary>
+        public void RefreshMoves(GameSession session)
+        {
+            _session = session;
+            _movesText.text = "Moves " + session.MovesLeft;
+        }
+
+        private void ShowGoal(GoalItem item)
+        {
+            bool done = item.Shown == 0;
+            item.Label.text = done ? "Done" : item.Shown.ToString();
+            float alpha = done ? DoneAlpha : 1f;
+            Color c = item.SwatchColor;
+            c.a *= alpha;
+            item.Swatch.color = c;
+            Color t = item.Label.color;
+            t.a = alpha;
+            item.Label.color = t;
         }
 
         /// <summary>Opens the panel with a title and a button that runs the Build callback.</summary>
@@ -239,19 +306,23 @@ namespace BlastGame.View
         {
             while (_flyers.Count <= index)
             {
-                Image image = NewImage("Flyer", transform, Color.white);
+                Image image = NewImage("Flyer", transform, Color.white); // last child: drawn over everything
                 image.preserveAspect = true;
                 image.gameObject.SetActive(false);
                 _flyers.Add(image);
             }
             Image flyer = _flyers[index];
-            flyer.transform.SetAsLastSibling();
             flyer.sprite = sprite;
             flyer.color = color;
             float scale = _canvas.scaleFactor > 0f ? _canvas.scaleFactor : 1f;
             flyer.rectTransform.sizeDelta = new Vector2(sizePixels, sizePixels) / scale;
             flyer.rectTransform.position = new Vector3(screen.x, screen.y, 0f); // overlay canvas: world = screen
             flyer.gameObject.SetActive(true);
+        }
+
+        public void HideFlyer(int index)
+        {
+            if (index < _flyers.Count) _flyers[index].gameObject.SetActive(false);
         }
 
         public void HideFlyers()

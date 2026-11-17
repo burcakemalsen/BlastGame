@@ -112,6 +112,9 @@ namespace BlastGame.View
             if (_levels == null) return;
             _hud.HideResult();
             _hud.ShowLevelSelect();
+            // Flights of a turn still going on are hidden under the panel (see ShowFlyer); they still land,
+            // and the goal numbers match the session when the turn ends.
+            _hud.HideFlyers();
         }
 
         /// <summary>A level select button: that level starts, whatever was being played.</summary>
@@ -139,10 +142,18 @@ namespace BlastGame.View
             _session = _levels[index].CreateSession(_random);
             Grid grid = _session.Grid;
 
-            if (_view != null) Destroy(_view.gameObject);
+            if (_view != null)
+            {
+                // A board left mid-turn: its animation stops now (Destroy waits for the end of the frame),
+                // so it can neither show a flight again nor count a landing on the new level.
+                _view.StopTurn();
+                _view.gameObject.SetActive(false);
+                Destroy(_view.gameObject);
+            }
             _view = new GameObject("GridView").AddComponent<GridView>();
             _view.Build(grid);
-            _view.SetGoalTarget(GoalWorldPosition, ShowFlyer, _hud.HideFlyers);
+            _hud.HideFlyers(); // flights of a board left mid-turn
+            _view.SetGoalFlights(ClaimGoal, ShowFlyer, _hud.HideFlyer, _hud.HideFlyers, _hud.GoalArrived, OnTurnShown);
             _fitter.Setup(_camera, grid.Width, grid.Height);
 
             _hud.SetSeed(seed);
@@ -152,11 +163,14 @@ namespace BlastGame.View
             _hud.HideResult();
         }
 
-        /// <summary>The HUD icon of an obstacle goal in board space (the board sits at the world origin), or null.</summary>
-        private Vector3? GoalWorldPosition(ObstacleKind kind)
+        /// <summary>
+        /// The HUD icon of a goal in board space (the board sits at the world origin) for one more flying item,
+        /// or null when it does not fly.
+        /// </summary>
+        private Vector3? ClaimGoal(GoalRef goal)
         {
             Vector2 screen;
-            if (!_hud.TryGetGoalScreenPoint(kind, out screen)) return null;
+            if (!_hud.TryClaimGoal(goal, out screen)) return null;
             Vector3 world = _camera.ScreenToWorldPoint(new Vector3(screen.x, screen.y, -_camera.transform.position.z));
             world.z = 0f;
             return world;
@@ -165,6 +179,7 @@ namespace BlastGame.View
         /// <summary>Draws a flying item on the HUD at a board position, sized in board units.</summary>
         private void ShowFlyer(int index, Sprite sprite, Color color, Vector3 boardPos, float size)
         {
+            if (_hud.IsLevelSelectVisible) return; // the panel covers the board; nothing flies over it
             Vector3 screen = _camera.WorldToScreenPoint(boardPos);
             float pixelsPerUnit = _camera.pixelHeight / (2f * _camera.orthographicSize);
             _hud.ShowFlyer(index, sprite, color, new Vector2(screen.x, screen.y), size * pixelsPerUnit);
@@ -231,9 +246,15 @@ namespace BlastGame.View
             else
             {
                 result = _session.Tap(x, y);
-                _hud.Refresh(_session);
+                _hud.RefreshMoves(_session); // goal numbers drop as items land, then OnTurnShown syncs them
             }
             _view.AnimateTurn(result);
+        }
+
+        /// <summary>A turn has been fully shown: the goal numbers match the session again.</summary>
+        private void OnTurnShown()
+        {
+            if (!EndlessMode && _session != null) _hud.Refresh(_session);
         }
     }
 }
